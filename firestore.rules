@@ -1,0 +1,80 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    // --- Content: public read, admin-only write ---
+
+    match /sheikhs/{sheikhId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /lectures/{lectureId} {
+      allow read: if true;
+      allow write: if isAdmin();
+
+      // --- Comments: any signed-in user (including guest/anonymous) can post ---
+      match /comments/{commentId} {
+        allow read: if true;
+        allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+        allow update: if isAdmin();
+        allow delete: if isAdmin() || isOwner(resource.data.userId);
+      }
+    }
+
+    // --- Users: owner or admin only ---
+
+    match /users/{uid} {
+      allow read, write: if isOwner(uid) || isAdmin();
+
+      match /playlists/{playlistId} {
+        allow read, write: if isOwner(uid) || isAdmin();
+      }
+    }
+
+    // --- Admins: marker docs, no client writes (grant via console/Cloud Function only) ---
+
+    match /admins/{uid} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+
+    // -------------------------------------------------------------------------
+    // FORMER APP collections (shares this Firebase project). These were fully
+    // open under the old `allow read, write: if true` rules; restored verbatim
+    // so the other live app keeps working. NOTE: this is intentionally
+    // permissive — revisit if that app moves to its own Firebase project.
+    // -------------------------------------------------------------------------
+
+    match /stages/{doc=**} {
+      allow read, write: if true;
+    }
+
+    match /questions/{doc=**} {
+      allow read, write: if true;
+    }
+
+    // Deny everything else by default.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
