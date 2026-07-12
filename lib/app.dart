@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'core/theme/app_theme.dart';
-import 'screens/splash/splash_screen.dart';
+import 'routes/root_router.dart';
 
 class UlamaCircleApp extends StatelessWidget {
   const UlamaCircleApp({super.key});
@@ -13,9 +13,9 @@ class UlamaCircleApp extends StatelessWidget {
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: ThemeMode.system,
-      // Day 7 wires real routing (onboarding -> auth check -> home).
-      // For now the splash screen is the entry point so the project runs.
-      home: const SplashScreen(),
+      // RootRouter runs the full launch flow:
+      // onboarding (first launch) -> auth check -> home.
+      home: const RootRouter(),
     );
   }
 }
