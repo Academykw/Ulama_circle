@@ -43,6 +43,9 @@ dependencies:
   # Search
   algoliasearch: ^1.2.1
 
+  # Google sign-in
+  google_sign_in: ^7.2.0
+
   cupertino_icons: ^1.0.8
 
 dev_dependencies:
