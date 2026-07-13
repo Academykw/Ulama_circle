@@ -26,6 +26,10 @@ class AppConstants {
   static const String metaKeyOnboardingSeen = 'onboarding_seen';
   static const String metaKeyThemeMode = 'theme_mode';
 
+  // ---- Languages ----
+  /// Lecture languages the app ships with (lowercase, as stored in Firestore).
+  static const List<String> supportedLanguages = ['yoruba', 'hausa', 'english'];
+
   // ---- Google sign-in ----
   /// The project's *Web* OAuth client ID (client_type 3 in google-services.json).
   /// google_sign_in v7 needs this as `serverClientId` so the returned ID token's
