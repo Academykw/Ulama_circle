@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  just_audio's LockCachingAudioSource (and any StreamAudioSource) serves audio to
+  the native player through a local HTTP proxy on 127.0.0.1. Android 9+ blocks
+  cleartext HTTP by default, which breaks that proxy connection. We permit
+  cleartext ONLY to localhost — all real network traffic stays HTTPS-only.
+-->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">127.0.0.1</domain>
+        <domain includeSubdomains="false">localhost</domain>
+    </domain-config>
+</network-security-config>
