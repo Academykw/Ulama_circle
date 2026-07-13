@@ -31,6 +31,18 @@ final sheikhByIdProvider = Provider.family<SheikhModel?, String>((ref, id) {
   return null;
 });
 
+// --- Per-sheikh preview: first page of a sheikh's lectures for home rows ---
+
+/// First page (~10) of a sheikh's lectures, for the horizontal row on Home.
+/// The full paginated list lives on the sheikh detail screen.
+final sheikhPreviewLecturesProvider =
+    FutureProvider.family<List<LectureModel>, String>((ref, sheikhId) async {
+  final page = await ref
+      .watch(firebaseServiceProvider)
+      .getLecturesBySheikh(sheikhId, pageSize: 10);
+  return page.items;
+});
+
 // --- Featured lectures: home banner (bounded, refreshable) ---
 
 final featuredLecturesProvider = FutureProvider<List<LectureModel>>((ref) {

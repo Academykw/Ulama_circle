@@ -4,6 +4,7 @@ import 'package:hive_ce_flutter/hive_ce_flutter.dart';
 import '../core/constants/app_constants.dart';
 import '../hive_registrar.g.dart';
 import '../models/downloaded_lecture_model.dart';
+import '../models/history_entry.dart';
 
 /// The single owner of all Hive access. Nothing else in the app should call
 /// `Hive.box(...)` directly — go through this service so box names, adapter
@@ -115,4 +116,65 @@ class LocalDbService {
     final map = Map<String, dynamic>.from(raw)..remove(lectureId);
     await _meta.put(_positionsKey, map);
   }
+
+  // ---- Listening history + resume ("continue listening") ----
+  // Stored as a most-recent-first list of maps under one key. Capped so it
+  // never grows unbounded. Each entry carries its own resume position.
+
+  static const String _historyKey = 'play_history';
+  static const int _historyLimit = 50;
+
+  List<HistoryEntry> history() {
+    final raw = _meta.get(_historyKey) as List?;
+    if (raw == null) return const [];
+    return raw
+        .map((e) => HistoryEntry.fromMap(Map<String, dynamic>.from(e as Map)))
+        .toList();
+  }
+
+  HistoryEntry? historyFor(String lectureId) {
+    for (final e in history()) {
+      if (e.id == lectureId) return e;
+    }
+    return null;
+  }
+
+  Future<void> _writeHistory(List<HistoryEntry> list) =>
+      _meta.put(_historyKey, list.map((e) => e.toMap()).toList());
+
+  /// Adds or moves an entry to the front (most recent). Used when playback of a
+  /// lecture starts.
+  Future<void> upsertHistory(HistoryEntry entry) async {
+    final list = history().where((e) => e.id != entry.id).toList();
+    list.insert(0, entry);
+    if (list.length > _historyLimit) list.removeRange(_historyLimit, list.length);
+    await _writeHistory(list);
+  }
+
+  /// Updates the resume position (and real duration once known) for a lecture
+  /// already in history, moving it to the front. No-op if not present.
+  Future<void> updateHistoryProgress(
+    String lectureId, {
+    required int positionSeconds,
+    int? durationSeconds,
+  }) async {
+    final list = history();
+    final idx = list.indexWhere((e) => e.id == lectureId);
+    if (idx == -1) return;
+    final updated = list[idx].copyWith(
+      positionSeconds: positionSeconds,
+      durationSeconds: durationSeconds,
+      lastPlayedEpoch: DateTime.now().millisecondsSinceEpoch,
+    );
+    list.removeAt(idx);
+    list.insert(0, updated);
+    await _writeHistory(list);
+  }
+
+  Future<void> removeHistory(String lectureId) async {
+    final list = history().where((e) => e.id != lectureId).toList();
+    await _writeHistory(list);
+  }
+
+  Future<void> clearHistory() => _meta.delete(_historyKey);
 }
