@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/auth_provider.dart';
 import '../screens/auth/login_screen.dart';
-import '../screens/home/home_screen.dart';
 import '../screens/splash/splash_screen.dart';
+import 'main_shell.dart';
 
 /// The app's top-level router. Watches auth state and shows:
 ///   - Splash while the first auth check resolves
@@ -24,7 +24,7 @@ class AuthGate extends ConsumerWidget {
       error: (e, _) => Scaffold(
         body: Center(child: Text('Auth error: $e')),
       ),
-      data: (user) => user == null ? const LoginScreen() : const HomeScreen(),
+      data: (user) => user == null ? const LoginScreen() : const MainShell(),
     );
   }
 }
