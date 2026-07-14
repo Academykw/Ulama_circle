@@ -8,6 +8,8 @@ class AppConstants {
   static const String lecturesCollection = 'lectures';
   static const String sheikhsCollection = 'sheikhs';
   static const String categoriesCollection = 'categories';
+  static const String recitersCollection = 'reciters';
+  static const String recitationsCollection = 'recitations';
   static const String usersCollection = 'users';
   static const String adminsCollection = 'admins';
   static const String commentsSubcollection = 'comments';
@@ -25,6 +27,9 @@ class AppConstants {
   static const String metaKeyIsGuest = 'is_guest';
   static const String metaKeyOnboardingSeen = 'onboarding_seen';
   static const String metaKeyThemeMode = 'theme_mode';
+  static const String metaKeyNotifications = 'notifications_inbox';
+  /// Prefix for per-topic push toggles, e.g. 'notif_pref_general_announcements'.
+  static const String metaKeyNotifPrefPrefix = 'notif_pref_';
 
   // ---- Languages ----
   /// Lecture languages the app ships with (lowercase, as stored in Firestore).
@@ -41,7 +46,29 @@ class AppConstants {
 
   // ---- FCM topics ----
   static const String topicGeneralAnnouncements = 'general_announcements';
+  static const String topicNewLectures = 'new_lectures';
+  static const String topicRamadan = 'ramadan_reminders';
   static String sheikhTopic(String sheikhId) => 'sheikh_$sheikhId';
+
+  /// The push topics the user can toggle, with display labels + descriptions.
+  static const List<({String topic, String label, String description})>
+      notificationTopics = [
+    (
+      topic: topicGeneralAnnouncements,
+      label: 'Announcements',
+      description: 'Important news and updates from Ulama Circle',
+    ),
+    (
+      topic: topicNewLectures,
+      label: 'New lectures',
+      description: 'When fresh lectures are added to the catalogue',
+    ),
+    (
+      topic: topicRamadan,
+      label: 'Ramadan reminders',
+      description: 'Daily Qur’an and reflection prompts in Ramadan',
+    ),
+  ];
 
   // ---- Pagination ----
   static const int defaultPageSize = 20;

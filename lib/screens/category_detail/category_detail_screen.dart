@@ -9,6 +9,7 @@ import '../../core/utils/play_lecture.dart';
 import '../../providers/firebase_service_provider.dart';
 import '../../widgets/download_button.dart';
 import '../../widgets/lecture_list_tile.dart';
+import '../../widgets/mini_player.dart';
 
 /// Paginated list of all lectures in one category (across sheikhs). Same local
 /// pagination approach as the sheikh detail screen. Each tile's block shows the
@@ -79,6 +80,7 @@ class _CategoryDetailScreenState extends ConsumerState<CategoryDetailScreen> {
     return Scaffold(
       backgroundColor: AppColors.charcoal,
       appBar: AppBar(title: Text(widget.category.name)),
+      bottomNavigationBar: const SafeArea(top: false, child: MiniPlayer()),
       body: _buildBody(),
     );
   }
