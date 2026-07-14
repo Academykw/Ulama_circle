@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+// Flutter also defines a RepeatMode (animations); hide it so ours wins.
+import 'package:flutter/material.dart' hide RepeatMode;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
 
@@ -7,6 +8,7 @@ import '../../core/utils/formatters.dart';
 import '../../models/lecture_model.dart';
 import '../../models/player_queue.dart';
 import '../../providers/player_provider.dart';
+import '../../widgets/add_to_playlist_sheet.dart';
 import '../../widgets/download_button.dart';
 import '../../widgets/favorite_button.dart';
 import 'widgets/queue_sheet.dart';
@@ -110,6 +112,12 @@ class _PlayerBody extends ConsumerWidget {
                   ),
                 ),
                 FavoriteButton(lectureId: lecture.id, size: 26),
+                IconButton(
+                  tooltip: 'Add to playlist',
+                  icon: const Icon(Icons.playlist_add,
+                      color: AppColors.mutedText, size: 26),
+                  onPressed: () => showAddToPlaylistSheet(context, lecture.id),
+                ),
                 DownloadButton(lecture: lecture),
               ],
             ),

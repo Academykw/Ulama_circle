@@ -93,8 +93,9 @@ class PlaybackController {
     handler.onSkipToNext = next;
     handler.onSkipToPrevious = previous;
     // Auto-advance on track completion (repeat-one is handled by LoopMode and
-    // never emits completed).
-    _completionSub = handler.processingStateStream.listen((state) {
+    // never emits completed). The controller is an app-lifetime singleton, so
+    // this subscription intentionally lives for the whole session.
+    handler.processingStateStream.listen((state) {
       if (state == ProcessingState.completed) _onCompletion();
     });
   }
@@ -102,7 +103,6 @@ class PlaybackController {
   final Ref _ref;
   StreamSubscription<double>? _cacheSub;
   StreamSubscription<Duration>? _posSub;
-  StreamSubscription<ProcessingState>? _completionSub;
   DateTime _lastProgressSave = DateTime.fromMillisecondsSinceEpoch(0);
 
   AudioPlayerHandler get _handler => _ref.read(audioHandlerProvider);
