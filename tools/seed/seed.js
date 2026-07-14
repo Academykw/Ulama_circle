@@ -61,6 +61,68 @@ const sheikhs = [
   },
 ];
 
+// ---- Quran reciters ----
+// listenCount is denormalized (a Cloud Function bumps it in prod). surahCount is
+// set below to the actual number of recitation docs we seed for each reciter, so
+// the card count and the detail-screen list always agree.
+const reciters = [
+  {
+    id: 'rec_yahuza',
+    name: 'Qaari Yahuza Giro',
+    coverUrl: '',
+    language: 'arabic',
+    description: 'Melodious full-mushaf recitation.',
+    listenCount: 1434,
+    order: 1,
+  },
+  {
+    id: 'rec_abubukar',
+    name: 'Qaari Abubukar Ibn Ibrahim',
+    coverUrl: '',
+    language: 'arabic',
+    description: 'Classical tarteel recitation.',
+    listenCount: 533,
+    order: 2,
+  },
+  {
+    id: 'rec_ibrahim',
+    name: 'Qaari Ibrahim Yahya (English translation)',
+    coverUrl: '',
+    language: 'arabic',
+    description: 'Recitation with English translation.',
+    listenCount: 167,
+    order: 3,
+  },
+  {
+    id: 'rec_idris',
+    name: 'Qaari Idris Gashuwa (Quran Recitation)',
+    coverUrl: '',
+    language: 'arabic',
+    description: 'Heartfelt recitation of the last juz.',
+    listenCount: 1217,
+    order: 4,
+  },
+];
+
+// Short surahs used to build sample recitations. `take` = how many each reciter
+// gets (varies the surah counts).
+const surahCatalog = [
+  { n: 105, name: 'Suratul Fil' },
+  { n: 106, name: 'Suratul Quraysh' },
+  { n: 107, name: "Suratul Ma'un" },
+  { n: 108, name: 'Suratul Kawthar' },
+  { n: 109, name: 'Suratul Kafirun' },
+  { n: 112, name: 'Suratul Ikhlas' },
+  { n: 113, name: 'Suratul Falaq' },
+  { n: 114, name: 'Suratul Nas' },
+];
+const surahsPerReciter = {
+  rec_yahuza: 8,
+  rec_abubukar: 6,
+  rec_ibrahim: 4,
+  rec_idris: 5,
+};
+
 // ---- Categories ----
 const categories = [
   { id: 'aqeedah', name: 'Aqeedah', order: 1 },
@@ -190,9 +252,34 @@ const lectures = [
   },
 ];
 
+// Varied play counts so "Trending Now" (ordered by playCount) has a real order
+// in dev, and so each scholar's denormalized `totalViews` is meaningful. In
+// production these are incremented by a Cloud Function.
+const playCountById = {
+  lec_0001: 1240,
+  lec_0002: 980,
+  lec_0003: 875,
+  lec_0004: 1530,
+  lec_0005: 640,
+  lec_0006: 410,
+  lec_0007: 2100,
+  lec_0008: 760,
+  lec_0009: 320,
+};
+
 async function seed() {
   const sheikhById = Object.fromEntries(sheikhs.map((s) => [s.id, s]));
   const categoryById = Object.fromEntries(categories.map((c) => [c.id, c]));
+
+  // Denormalize each scholar's total views + lecture count from their lectures,
+  // so the Scholars grid reads them cheaply (one doc, no per-sheikh aggregate).
+  const viewsBySheikh = {};
+  const countBySheikh = {};
+  for (const l of lectures) {
+    viewsBySheikh[l.sheikhId] =
+      (viewsBySheikh[l.sheikhId] || 0) + (playCountById[l.id] || 0);
+    countBySheikh[l.sheikhId] = (countBySheikh[l.sheikhId] || 0) + 1;
+  }
 
   let batch = db.batch();
   let ops = 0;
@@ -207,6 +294,8 @@ async function seed() {
   // Sheikhs
   for (const s of sheikhs) {
     const { id, ...data } = s;
+    data.totalViews = viewsBySheikh[id] || 0;
+    data.lectureCount = countBySheikh[id] || 0;
     batch.set(db.collection('sheikhs').doc(id), data);
     ops++;
   }
@@ -217,13 +306,55 @@ async function seed() {
     batch.set(db.collection('categories').doc(id), data);
     ops++;
   }
+
+  // Quran reciters + their recitations (one doc per surah).
+  let recitationCount = 0;
+  for (const r of reciters) {
+    const take = surahsPerReciter[r.id] || 0;
+    const surahs = surahCatalog.slice(0, take);
+    const { id, ...rdata } = r;
+    rdata.surahCount = surahs.length;
+    batch.set(db.collection('reciters').doc(id), rdata);
+    ops++;
+
+    surahs.forEach((s, idx) => {
+      const recId = `qr_${id}_${s.n}`;
+      batch.set(db.collection('recitations').doc(recId), {
+        reciterId: id,
+        reciterName: r.name,
+        coverUrl: r.coverUrl,
+        title: `Recitation Of Qur'an (${s.n}) ${s.name}`,
+        surahNumber: s.n,
+        audioUrl: SAMPLE_AUDIO[idx % SAMPLE_AUDIO.length],
+        durationSeconds: 20 + (s.n % 40),
+        order: idx + 1,
+        listenCount: 0,
+      });
+      ops++;
+      recitationCount++;
+    });
+  }
   await commit();
+
+  // Albums group related lectures into a series. '' = standalone lecture.
+  const albumById = {
+    lec_0001: 'Tawheed Series',
+    lec_0002: 'Aqeedah Foundations',
+    lec_0003: 'Aqeedah Foundations',
+    lec_0004: "Tafsir of the Qur'an",
+    lec_0005: 'Fiqh of Worship',
+    lec_0006: '',
+    lec_0007: 'Foundations of Islam',
+    lec_0008: 'Foundations of Islam',
+    lec_0009: '',
+  };
 
   // Lectures
   let i = 0;
   for (const l of lectures) {
     const sheikh = sheikhById[l.sheikhId];
     const category = categoryById[l.category];
+    const album = albumById[l.id] || '';
     const data = {
       title: l.title,
       sheikhId: l.sheikhId,
@@ -232,12 +363,13 @@ async function seed() {
       durationSeconds: l.durationSeconds,
       language: l.language,
       category: l.category,
+      album: album,
       isFeatured: l.isFeatured,
       dateAdded: Timestamp.fromMillis(now - l.ageDays * day),
       fileSizeMb: l.fileSizeMb,
-      keywords: kw(l.title, sheikh ? sheikh.name : '', category ? category.name : '', l.language),
+      keywords: kw(l.title, sheikh ? sheikh.name : '', category ? category.name : '', l.language, album),
       commentCount: 0,
-      playCount: 0,
+      playCount: playCountById[l.id] ?? 0,
     };
     batch.set(db.collection('lectures').doc(l.id), data);
     ops++;
@@ -246,7 +378,7 @@ async function seed() {
   await commit();
 
   console.log(
-    `Seeded ${sheikhs.length} sheikhs, ${categories.length} categories, ${lectures.length} lectures.`
+    `Seeded ${sheikhs.length} sheikhs, ${categories.length} categories, ${lectures.length} lectures, ${reciters.length} reciters, ${recitationCount} recitations.`
   );
   console.log(
     'NOTE: to grant admin access, manually create a doc at admins/{yourUid} with { role: "admin" }.'
