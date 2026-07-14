@@ -15,6 +15,7 @@ import '../../providers/local_db_provider.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/favorite_button.dart';
 import '../../widgets/lecture_list_tile.dart';
+import '../playlist/playlists_view.dart';
 
 /// The Library tab: Downloads / History / Liked / Playlists. Downloads is live
 /// (backed by the download store); the others land on Days 13 & 20 and show
@@ -57,11 +58,7 @@ class LibraryScreen extends StatelessWidget {
             _DownloadsTab(),
             _HistoryTab(),
             _LikedTab(),
-            EmptyState(
-              icon: Icons.queue_music,
-              title: 'No playlists yet',
-              subtitle: 'Create playlists to organize your lectures',
-            ),
+            PlaylistsView(),
           ],
         ),
       ),

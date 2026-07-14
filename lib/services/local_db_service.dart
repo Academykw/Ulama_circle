@@ -3,6 +3,7 @@ import 'package:hive_ce_flutter/hive_ce_flutter.dart';
 
 import '../core/constants/app_constants.dart';
 import '../hive_registrar.g.dart';
+import '../models/app_notification.dart';
 import '../models/downloaded_lecture_model.dart';
 import '../models/history_entry.dart';
 
@@ -177,4 +178,54 @@ class LocalDbService {
   }
 
   Future<void> clearHistory() => _meta.delete(_historyKey);
+
+  // ---------------------------------------------------------------------------
+  // Notifications inbox (bell) — stored as a most-recent-first list of maps.
+  // ---------------------------------------------------------------------------
+
+  static const int _notifLimit = 100;
+
+  List<AppNotification> notifications() {
+    final raw = _meta.get(AppConstants.metaKeyNotifications) as List?;
+    if (raw == null) return const [];
+    return raw
+        .map((e) =>
+            AppNotification.fromMap(Map<String, dynamic>.from(e as Map)))
+        .toList();
+  }
+
+  int get unreadNotificationCount =>
+      notifications().where((n) => !n.read).length;
+
+  Future<void> _writeNotifications(List<AppNotification> list) => _meta.put(
+      AppConstants.metaKeyNotifications, list.map((n) => n.toMap()).toList());
+
+  /// Adds a notification to the front, de-duplicating by id.
+  Future<void> addNotification(AppNotification n) async {
+    final list = notifications().where((e) => e.id != n.id).toList();
+    list.insert(0, n);
+    if (list.length > _notifLimit) list.removeRange(_notifLimit, list.length);
+    await _writeNotifications(list);
+  }
+
+  Future<void> markAllNotificationsRead() async {
+    final list = notifications().map((n) => n.copyWith(read: true)).toList();
+    await _writeNotifications(list);
+  }
+
+  Future<void> clearNotifications() =>
+      _meta.delete(AppConstants.metaKeyNotifications);
+
+  /// Reactive handle so the bell + inbox rebuild as notifications change.
+  ValueListenable<Box> notificationsListenable() =>
+      _meta.listenable(keys: [AppConstants.metaKeyNotifications]);
+
+  // ---- Push notification topic preferences (default on) ----
+
+  bool notifPref(String topic) => _meta.get(
+      '${AppConstants.metaKeyNotifPrefPrefix}$topic',
+      defaultValue: true) as bool;
+
+  Future<void> setNotifPref(String topic, bool value) =>
+      _meta.put('${AppConstants.metaKeyNotifPrefPrefix}$topic', value);
 }
