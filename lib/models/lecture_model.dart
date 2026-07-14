@@ -9,6 +9,7 @@ class LectureModel {
   final int durationSeconds;
   final String language; // yoruba | hausa | english
   final String category;
+  final String album; // series/collection name; '' when the lecture stands alone
   final bool isFeatured;
   final DateTime dateAdded;
   final double fileSizeMb;
@@ -28,6 +29,7 @@ class LectureModel {
     required this.isFeatured,
     required this.dateAdded,
     required this.fileSizeMb,
+    this.album = '',
     this.keywords = const [],
     this.commentCount = 0,
     this.playCount = 0,
@@ -44,6 +46,7 @@ class LectureModel {
       durationSeconds: data['durationSeconds'] as int? ?? 0,
       language: data['language'] as String? ?? 'english',
       category: data['category'] as String? ?? '',
+      album: data['album'] as String? ?? '',
       isFeatured: data['isFeatured'] as bool? ?? false,
       dateAdded: (data['dateAdded'] as Timestamp?)?.toDate() ?? DateTime.now(),
       fileSizeMb: (data['fileSizeMb'] as num?)?.toDouble() ?? 0.0,
@@ -61,6 +64,7 @@ class LectureModel {
         'durationSeconds': durationSeconds,
         'language': language,
         'category': category,
+        'album': album,
         'isFeatured': isFeatured,
         'dateAdded': Timestamp.fromDate(dateAdded),
         'fileSizeMb': fileSizeMb,

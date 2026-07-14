@@ -35,6 +35,28 @@ class Formatters {
     return '${megabytes.toStringAsFixed(1)} MB';
   }
 
+  /// Compact count for play/listen tallies: 940 -> "940", 1240 -> "1.2K",
+  /// 2_100_000 -> "2.1M".
+  static String compactCount(int n) {
+    if (n < 1000) return '$n';
+    if (n < 1000000) {
+      final k = n / 1000;
+      return '${k.toStringAsFixed(k >= 10 ? 0 : 1)}K';
+    }
+    final m = n / 1000000;
+    return '${m.toStringAsFixed(m >= 10 ? 0 : 1)}M';
+  }
+
+  /// Short "time ago" for notifications: "now", "5m", "3h", "2d", else a date.
+  static String timeAgo(DateTime when) {
+    final diff = DateTime.now().difference(when);
+    if (diff.inMinutes < 1) return 'now';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m';
+    if (diff.inHours < 24) return '${diff.inHours}h';
+    if (diff.inDays < 7) return '${diff.inDays}d';
+    return '${when.day}/${when.month}/${when.year}';
+  }
+
   /// Capitalizes a lowercase tag/language for display: "yoruba" -> "Yoruba".
   static String titleCase(String value) {
     if (value.isEmpty) return value;
