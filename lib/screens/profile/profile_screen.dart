@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../providers/auth_provider.dart';
+import '../notifications/notification_settings_screen.dart';
 
 /// Profile / settings tab. Header adapts to guest vs registered; below it,
 /// preference and support rows. Several rows are placeholders wired to real
@@ -44,8 +45,11 @@ class ProfileScreen extends ConsumerWidget {
               icon: Icons.notifications_outlined,
               iconColor: AppColors.gold,
               title: 'Notifications',
-              subtitle: 'Manage alerts & sounds',
-              onTap: () => _soon(context, 'Notification settings arrive with push'),
+              subtitle: 'Manage what you’re notified about',
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                    builder: (_) => const NotificationSettingsScreen()),
+              ),
             ),
           ]),
           const SizedBox(height: 24),
