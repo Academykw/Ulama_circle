@@ -27,6 +27,18 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Quran reciters + recitations: public read, admin-only write (like lectures).
+
+    match /reciters/{reciterId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /recitations/{recitationId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     match /lectures/{lectureId} {
       allow read: if true;
       allow write: if isAdmin();

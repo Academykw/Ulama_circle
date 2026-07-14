@@ -3,6 +3,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../core/constants/app_constants.dart';
 import '../models/category_model.dart';
 import '../models/lecture_model.dart';
+import '../models/reciter_model.dart';
+import '../models/recitation_model.dart';
 import '../models/sheikh_model.dart';
 
 /// One page of results plus the cursor needed to fetch the next page.
@@ -44,6 +46,10 @@ class FirebaseService {
       _db.collection(AppConstants.sheikhsCollection);
   CollectionReference<Map<String, dynamic>> get _categories =>
       _db.collection(AppConstants.categoriesCollection);
+  CollectionReference<Map<String, dynamic>> get _reciters =>
+      _db.collection(AppConstants.recitersCollection);
+  CollectionReference<Map<String, dynamic>> get _recitations =>
+      _db.collection(AppConstants.recitationsCollection);
 
   // ---------------------------------------------------------------------------
   // Sheikhs & categories — small bounded sets, safe to stream whole (ordered).
@@ -64,6 +70,14 @@ class FirebaseService {
     return doc.exists ? SheikhModel.fromFirestore(doc) : null;
   }
 
+  /// Server-side count of a sheikh's lectures (aggregate query — cheap, doesn't
+  /// read the docs). Powers the "X lectures" header.
+  Future<int> getSheikhLectureCount(String sheikhId) async {
+    final snap =
+        await _lectures.where('sheikhId', isEqualTo: sheikhId).count().get();
+    return snap.count ?? 0;
+  }
+
   Stream<List<CategoryModel>> watchCategories() => _categories
       .orderBy('order')
       .snapshots()
@@ -72,6 +86,36 @@ class FirebaseService {
   Future<List<CategoryModel>> getCategories() async {
     final snap = await _categories.orderBy('order').get();
     return snap.docs.map(CategoryModel.fromFirestore).toList();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Quran reciters & recitations — reciters stream whole (small bounded set);
+  // a reciter's surahs are bounded (≤114), so we read them in one ordered query.
+  // ---------------------------------------------------------------------------
+
+  Stream<List<ReciterModel>> watchReciters() => _reciters
+      .orderBy('order')
+      .snapshots()
+      .map((s) => s.docs.map(ReciterModel.fromFirestore).toList());
+
+  Future<List<ReciterModel>> getReciters() async {
+    final snap = await _reciters.orderBy('order').get();
+    return snap.docs.map(ReciterModel.fromFirestore).toList();
+  }
+
+  /// A reciter's surahs. Bounded by [limit] (a full mushaf is 114), so we sort
+  /// by `order` client-side — avoids a composite index for one equality query.
+  Future<List<RecitationModel>> getRecitationsByReciter(
+    String reciterId, {
+    int limit = 200,
+  }) async {
+    final snap = await _recitations
+        .where('reciterId', isEqualTo: reciterId)
+        .limit(limit)
+        .get();
+    final list = snap.docs.map(RecitationModel.fromFirestore).toList();
+    list.sort((a, b) => a.order.compareTo(b.order));
+    return list;
   }
 
   // ---------------------------------------------------------------------------
@@ -86,6 +130,16 @@ class FirebaseService {
     final snap = await _lectures
         .where('isFeatured', isEqualTo: true)
         .orderBy('dateAdded', descending: true)
+        .limit(limit)
+        .get();
+    return snap.docs.map(LectureModel.fromFirestore).toList();
+  }
+
+  /// Most-played lectures for the "Trending Now" home row. Bounded by [limit];
+  /// ordered by playCount desc. Single-field order — no composite index needed.
+  Future<List<LectureModel>> getTrendingLectures({int limit = 12}) async {
+    final snap = await _lectures
+        .orderBy('playCount', descending: true)
         .limit(limit)
         .get();
     return snap.docs.map(LectureModel.fromFirestore).toList();

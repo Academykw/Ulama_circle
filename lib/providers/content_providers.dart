@@ -31,6 +31,12 @@ final sheikhByIdProvider = Provider.family<SheikhModel?, String>((ref, id) {
   return null;
 });
 
+/// Server-side count of a sheikh's lectures — for the sheikh detail header.
+final sheikhLectureCountProvider =
+    FutureProvider.family<int, String>((ref, sheikhId) {
+  return ref.watch(firebaseServiceProvider).getSheikhLectureCount(sheikhId);
+});
+
 // --- Per-sheikh preview: first page of a sheikh's lectures for home rows ---
 
 /// First page (~10) of a sheikh's lectures, for the horizontal row on Home.
@@ -47,6 +53,36 @@ final sheikhPreviewLecturesProvider =
 
 final featuredLecturesProvider = FutureProvider<List<LectureModel>>((ref) {
   return ref.watch(firebaseServiceProvider).getFeaturedLectures();
+});
+
+// --- Trending: most-played lectures for the home "Trending Now" row ---
+
+final trendingLecturesProvider = FutureProvider<List<LectureModel>>((ref) {
+  return ref.watch(firebaseServiceProvider).getTrendingLectures();
+});
+
+/// Larger trending list for the full Trending screen (home row uses the small
+/// one above).
+final allTrendingLecturesProvider = FutureProvider<List<LectureModel>>((ref) {
+  return ref.watch(firebaseServiceProvider).getTrendingLectures(limit: 60);
+});
+
+// --- Ramadan: curated picks (Tafsir + Seerah) for the Ramadan collection ---
+
+/// Lectures for the Ramadan hub — Tafsir + Seerah, merged and de-duplicated.
+/// A dedicated `ramadan` tag can replace this later without touching the UI.
+final ramadanLecturesProvider = FutureProvider<List<LectureModel>>((ref) async {
+  final svc = ref.watch(firebaseServiceProvider);
+  final results = await Future.wait([
+    svc.getLecturesByCategory('tafsir'),
+    svc.getLecturesByCategory('seerah'),
+  ]);
+  final seen = <String>{};
+  return [
+    for (final page in results)
+      for (final l in page.items)
+        if (seen.add(l.id)) l,
+  ];
 });
 
 // --- Latest lectures: paginated home feed ---
