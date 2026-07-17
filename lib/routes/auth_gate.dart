@@ -18,6 +18,8 @@ class AuthGate extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authStateProvider);
+    // Fire-and-forget: record this session as "active today" for the dashboard.
+    ref.watch(activityPingProvider);
 
     return authState.when(
       loading: () => const SplashScreen(),

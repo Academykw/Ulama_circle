@@ -49,7 +49,7 @@ class CategoryRow extends ConsumerWidget {
                       labelPadding: const EdgeInsets.symmetric(horizontal: 4),
                       padding: const EdgeInsets.symmetric(
                           horizontal: 14, vertical: 8),
-                      labelStyle: const TextStyle(
+                      labelStyle: TextStyle(
                           color: AppColors.cream, fontWeight: FontWeight.w600),
                       backgroundColor: AppColors.surfaceDark,
                       side: BorderSide(

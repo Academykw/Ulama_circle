@@ -144,7 +144,7 @@ class _Message extends StatelessWidget {
         children: [
           Icon(icon, color: AppColors.mutedText, size: 40),
           const SizedBox(height: 12),
-          Text(text, style: const TextStyle(color: AppColors.mutedText)),
+          Text(text, style: TextStyle(color: AppColors.mutedText)),
           if (onRetry != null) ...[
             const SizedBox(height: 12),
             TextButton(

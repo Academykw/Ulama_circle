@@ -45,7 +45,7 @@ class ContinueListening extends ConsumerWidget {
                 height: 48,
                 decoration: const BoxDecoration(
                     color: AppColors.gold, shape: BoxShape.circle),
-                child: const Icon(Icons.play_arrow,
+                child: Icon(Icons.play_arrow,
                     color: AppColors.charcoal, size: 28),
               ),
               const SizedBox(width: 14),
@@ -64,7 +64,7 @@ class ContinueListening extends ConsumerWidget {
                       entry.title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                           color: AppColors.cream,
                           fontSize: 15,
                           fontWeight: FontWeight.w700),
@@ -76,7 +76,7 @@ class ContinueListening extends ConsumerWidget {
                           : entry.sheikhName,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                           color: AppColors.mutedText, fontSize: 12),
                     ),
                     const SizedBox(height: 8),
