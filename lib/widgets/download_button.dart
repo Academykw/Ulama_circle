@@ -52,7 +52,7 @@ class DownloadButton extends ConsumerWidget {
               InkWell(
                 customBorder: const CircleBorder(),
                 onTap: () => controller.cancel(lecture.id),
-                child: const Icon(Icons.close, size: 14, color: AppColors.mutedText),
+                child: Icon(Icons.close, size: 14, color: AppColors.mutedText),
               ),
             ],
           ),
@@ -96,16 +96,16 @@ class DownloadButton extends ConsumerWidget {
       context: context,
       builder: (_) => AlertDialog(
         backgroundColor: AppColors.surfaceDark,
-        title: const Text('Remove download?',
+        title: Text('Remove download?',
             style: TextStyle(color: AppColors.cream)),
         content: Text(
           'Delete the downloaded audio for "${lecture.title}"? You can download it again later.',
-          style: const TextStyle(color: AppColors.mutedText),
+          style: TextStyle(color: AppColors.mutedText),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel',
+            child: Text('Cancel',
                 style: TextStyle(color: AppColors.mutedText)),
           ),
           TextButton(
