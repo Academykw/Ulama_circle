@@ -61,13 +61,13 @@ class MiniPlayer extends ConsumerWidget {
                     padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(10),
-                      gradient: const LinearGradient(
+                      gradient: LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                         colors: [AppColors.olive, AppColors.charcoal],
                       ),
                     ),
-                    child: const Icon(Icons.graphic_eq,
+                    child: Icon(Icons.graphic_eq,
                         color: AppColors.cream, size: 20),
                   ),
                   const SizedBox(width: 12),
@@ -80,7 +80,7 @@ class MiniPlayer extends ConsumerWidget {
                           lecture.title,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: AppColors.cream,
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
@@ -90,7 +90,7 @@ class MiniPlayer extends ConsumerWidget {
                           lecture.sheikhName,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                               color: AppColors.mutedText, fontSize: 11),
                         ),
                       ],

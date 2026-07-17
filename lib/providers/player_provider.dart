@@ -8,9 +8,14 @@ import '../models/history_entry.dart';
 import '../models/lecture_model.dart';
 import '../models/player_queue.dart';
 import '../services/audio_player_handler.dart';
+import '../services/engagement_service.dart';
 import 'download_providers.dart';
 import 'history_provider.dart';
 import 'local_db_provider.dart';
+
+/// Records plays/listens for trending + the admin dashboard.
+final engagementServiceProvider =
+    Provider<EngagementService>((ref) => EngagementService());
 
 /// The single AudioPlayerHandler, created via AudioService.init() in main() and
 /// injected here. Reading it without that override is a deliberate fail-fast.
@@ -104,13 +109,23 @@ class PlaybackController {
   StreamSubscription<double>? _cacheSub;
   StreamSubscription<Duration>? _posSub;
   DateTime _lastProgressSave = DateTime.fromMillisecondsSinceEpoch(0);
+  // Whether the current queue is Quran recitations (vs lectures) — decides which
+  // engagement counter to bump when a track starts.
+  bool _isRecitationQueue = false;
 
   AudioPlayerHandler get _handler => _ref.read(audioHandlerProvider);
   PlayerQueueNotifier get _queue => _ref.read(playerQueueProvider.notifier);
 
   /// Loads [lectures] as the queue and starts at [startIndex]. This is the
-  /// "tap a list → the whole list becomes the queue" behavior.
-  Future<void> playQueue(List<LectureModel> lectures, int startIndex) async {
+  /// "tap a list → the whole list becomes the queue" behavior. Set
+  /// [isRecitation] when the queue is Quran recitations so listens (not plays)
+  /// are counted.
+  Future<void> playQueue(
+    List<LectureModel> lectures,
+    int startIndex, {
+    bool isRecitation = false,
+  }) async {
+    _isRecitationQueue = isRecitation;
     _queue.setQueue(lectures, startIndex);
     await _playCurrent();
   }
@@ -218,6 +233,14 @@ class PlaybackController {
     await _handler.setSource(source: source, item: _mediaItem(lecture));
     if (resumeAt > 0) await _handler.seek(Duration(seconds: resumeAt));
     await _handler.play();
+
+    // Fire-and-forget engagement count (trending + dashboard). Non-critical.
+    final engagement = _ref.read(engagementServiceProvider);
+    if (_isRecitationQueue) {
+      engagement.recordRecitationListen(lecture.id);
+    } else {
+      engagement.recordLecturePlay(lecture.id);
+    }
 
     _lastProgressSave = DateTime.now();
     _posSub = _handler.positionStream.listen((position) {

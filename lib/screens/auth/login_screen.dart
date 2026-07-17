@@ -117,7 +117,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     const Icon(Icons.circle_outlined,
                         color: AppColors.gold, size: 56),
                     const SizedBox(height: 16),
-                    const Text(
+                    Text(
                       'Ulama Circle',
                       textAlign: TextAlign.center,
                       style: TextStyle(
@@ -133,7 +133,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           ? 'Create an account to get started'
                           : 'Sign in to continue',
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
+                      style: TextStyle(
                           color: AppColors.mutedText, fontSize: 13),
                     ),
                     const SizedBox(height: 32),
@@ -213,7 +213,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             borderRadius: BorderRadius.circular(12)),
                       ),
                       child: _busy
-                          ? const SizedBox(
+                          ? SizedBox(
                               height: 20,
                               width: 20,
                               child: CircularProgressIndicator(
@@ -231,7 +231,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           _isRegister
                               ? 'Already have an account?'
                               : "Don't have an account?",
-                          style: const TextStyle(
+                          style: TextStyle(
                               color: AppColors.mutedText, fontSize: 13),
                         ),
                         TextButton(
@@ -251,7 +251,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       label: const Text('Continue with Google'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.cream,
-                        side: const BorderSide(color: AppColors.mutedText),
+                        side: BorderSide(color: AppColors.mutedText),
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12)),
@@ -264,7 +264,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       label: const Text('Continue as guest'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.cream,
-                        side: const BorderSide(color: AppColors.mutedText),
+                        side: BorderSide(color: AppColors.mutedText),
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12)),
@@ -315,10 +315,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       textInputAction: textInputAction,
       onFieldSubmitted: onFieldSubmitted,
       validator: validator,
-      style: const TextStyle(color: AppColors.cream),
+      style: TextStyle(color: AppColors.cream),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: const TextStyle(color: AppColors.mutedText),
+        labelStyle: TextStyle(color: AppColors.mutedText),
         prefixIcon: Icon(icon, color: AppColors.mutedText, size: 20),
         suffixIcon: suffix,
         filled: true,
@@ -382,8 +382,8 @@ class _OrDivider extends StatelessWidget {
       child: Row(
         children: [
           Expanded(child: Divider(color: AppColors.mutedText.withValues(alpha: 0.3))),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 12),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
             child: Text('or', style: TextStyle(color: AppColors.mutedText)),
           ),
           Expanded(child: Divider(color: AppColors.mutedText.withValues(alpha: 0.3))),

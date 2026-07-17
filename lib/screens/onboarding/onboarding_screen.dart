@@ -76,7 +76,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 duration: const Duration(milliseconds: 200),
                 child: TextButton(
                   onPressed: _isLast ? null : _finish,
-                  child: const Text('Skip',
+                  child: Text('Skip',
                       style: TextStyle(color: AppColors.mutedText)),
                 ),
               ),
@@ -150,7 +150,7 @@ class _SlideView extends StatelessWidget {
           Text(
             slide.title,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               color: AppColors.cream,
               fontSize: 22,
               fontWeight: FontWeight.w600,
@@ -160,7 +160,7 @@ class _SlideView extends StatelessWidget {
           Text(
             slide.body,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               color: AppColors.mutedText,
               fontSize: 14,
               height: 1.5,

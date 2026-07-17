@@ -30,7 +30,7 @@ class PlayerScreen extends ConsumerWidget {
         centerTitle: true,
       ),
       body: lecture == null
-          ? const Center(
+          ? Center(
               child: Text('Nothing playing',
                   style: TextStyle(color: AppColors.mutedText)),
             )
@@ -60,7 +60,7 @@ class _PlayerBody extends ConsumerWidget {
                 constraints: const BoxConstraints(maxHeight: 300),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(24),
-                  gradient: const LinearGradient(
+                  gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [AppColors.olive, AppColors.surfaceDark],
@@ -72,7 +72,7 @@ class _PlayerBody extends ConsumerWidget {
                     child: Text(
                       lecture.sheikhName,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: AppColors.cream,
                         fontSize: 22,
                         fontWeight: FontWeight.w700,
@@ -94,7 +94,7 @@ class _PlayerBody extends ConsumerWidget {
                         lecture.title,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: AppColors.cream,
                           fontSize: 19,
                           fontWeight: FontWeight.w700,
@@ -105,7 +105,7 @@ class _PlayerBody extends ConsumerWidget {
                         '${lecture.sheikhName}  •  ${Formatters.titleCase(lecture.language)}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                             color: AppColors.mutedText, fontSize: 13),
                       ),
                     ],
@@ -114,7 +114,7 @@ class _PlayerBody extends ConsumerWidget {
                 FavoriteButton(lectureId: lecture.id, size: 26),
                 IconButton(
                   tooltip: 'Add to playlist',
-                  icon: const Icon(Icons.playlist_add,
+                  icon: Icon(Icons.playlist_add,
                       color: AppColors.mutedText, size: 26),
                   onPressed: () => showAddToPlaylistSheet(context, lecture.id),
                 ),
@@ -191,10 +191,10 @@ class _ScrubberState extends State<_Scrubber> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(Formatters.clock(position),
-                          style: const TextStyle(
+                          style: TextStyle(
                               color: AppColors.mutedText, fontSize: 12)),
                       Text(Formatters.clock(duration),
-                          style: const TextStyle(
+                          style: TextStyle(
                               color: AppColors.mutedText, fontSize: 12)),
                     ],
                   ),
@@ -256,8 +256,8 @@ class _Controls extends ConsumerWidget {
                 shape: BoxShape.circle,
               ),
               child: isBusy
-                  ? const Padding(
-                      padding: EdgeInsets.all(20),
+                  ? Padding(
+                      padding: const EdgeInsets.all(20),
                       child: CircularProgressIndicator(
                           color: AppColors.charcoal, strokeWidth: 3),
                     )
