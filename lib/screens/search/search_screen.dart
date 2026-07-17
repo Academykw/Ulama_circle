@@ -56,15 +56,15 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           autofocus: true,
           onChanged: _onChanged,
           textInputAction: TextInputAction.search,
-          style: const TextStyle(color: AppColors.cream, fontSize: 16),
+          style: TextStyle(color: AppColors.cream, fontSize: 16),
           decoration: InputDecoration(
             hintText: 'Search lectures, sheikhs, topics…',
-            hintStyle: const TextStyle(color: AppColors.mutedText),
+            hintStyle: TextStyle(color: AppColors.mutedText),
             border: InputBorder.none,
             suffixIcon: _controller.text.isEmpty
                 ? null
                 : IconButton(
-                    icon: const Icon(Icons.close, color: AppColors.mutedText),
+                    icon: Icon(Icons.close, color: AppColors.mutedText),
                     onPressed: () {
                       _controller.clear();
                       _onChanged('');

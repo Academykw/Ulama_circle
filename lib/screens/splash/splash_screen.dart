@@ -7,14 +7,14 @@ class SplashScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
+    return Scaffold(
       backgroundColor: AppColors.charcoal,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.circle_outlined, color: AppColors.gold, size: 56),
-            SizedBox(height: 16),
+            const Icon(Icons.circle_outlined, color: AppColors.gold, size: 56),
+            const SizedBox(height: 16),
             Text(
               'Ulama Circle',
               style: TextStyle(
@@ -24,7 +24,7 @@ class SplashScreen extends StatelessWidget {
                 letterSpacing: 0.5,
               ),
             ),
-            SizedBox(height: 4),
+            const SizedBox(height: 4),
             Text(
               'lectures from Nigeria and beyond',
               style: TextStyle(color: AppColors.mutedText, fontSize: 12),

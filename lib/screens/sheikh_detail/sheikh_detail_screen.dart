@@ -156,16 +156,16 @@ class _SheikhDetailScreenState extends ConsumerState<SheikhDetailScreen>
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
           child: TextField(
             controller: _searchCtrl,
-            style: const TextStyle(color: AppColors.cream),
+            style: TextStyle(color: AppColors.cream),
             decoration: InputDecoration(
               hintText: 'Search lectures',
-              hintStyle: const TextStyle(color: AppColors.mutedText),
+              hintStyle: TextStyle(color: AppColors.mutedText),
               prefixIcon:
-                  const Icon(Icons.search, color: AppColors.mutedText, size: 20),
+                  Icon(Icons.search, color: AppColors.mutedText, size: 20),
               suffixIcon: _query.isEmpty
                   ? null
                   : IconButton(
-                      icon: const Icon(Icons.close,
+                      icon: Icon(Icons.close,
                           color: AppColors.mutedText, size: 18),
                       onPressed: _searchCtrl.clear,
                     ),
@@ -257,7 +257,7 @@ class _SheikhHeader extends ConsumerWidget {
               children: [
                 Text(
                   sheikh.name,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: AppColors.cream,
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
@@ -281,7 +281,7 @@ class _SheikhHeader extends ConsumerWidget {
                     sheikh.bio,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                         color: AppColors.mutedText, fontSize: 12, height: 1.4),
                   ),
                 ],
@@ -324,7 +324,7 @@ class _Avatar extends StatelessWidget {
       ),
       child: Text(
         _initials,
-        style: const TextStyle(
+        style: TextStyle(
           color: AppColors.charcoal,
           fontSize: 24,
           fontWeight: FontWeight.w800,
@@ -364,7 +364,7 @@ class _LectureRow extends StatelessWidget {
               width: 22,
               child: Text('$number',
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
+                  style: TextStyle(
                       color: AppColors.mutedText,
                       fontSize: 15,
                       fontWeight: FontWeight.w600)),
@@ -378,7 +378,7 @@ class _LectureRow extends StatelessWidget {
                     lecture.title,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: AppColors.cream,
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
@@ -389,7 +389,7 @@ class _LectureRow extends StatelessWidget {
                   Text(meta,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                           color: AppColors.mutedText, fontSize: 12)),
                 ],
               ),
@@ -438,16 +438,16 @@ class _AlbumCard extends ConsumerWidget {
                 colors: [AppColors.gold, AppColors.olive],
               ),
             ),
-            child: const Icon(Icons.album, color: AppColors.charcoal, size: 26),
+            child: Icon(Icons.album, color: AppColors.charcoal, size: 26),
           ),
           title: Text(name,
-              style: const TextStyle(
+              style: TextStyle(
                   color: AppColors.cream,
                   fontSize: 15,
                   fontWeight: FontWeight.w700)),
           subtitle: Text(
               '${lectures.length} lecture${lectures.length == 1 ? '' : 's'}',
-              style: const TextStyle(color: AppColors.mutedText, fontSize: 12)),
+              style: TextStyle(color: AppColors.mutedText, fontSize: 12)),
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(14, 0, 14, 6),
@@ -493,7 +493,7 @@ class _Message extends StatelessWidget {
         children: [
           Icon(icon, color: AppColors.mutedText, size: 40),
           const SizedBox(height: 12),
-          Text(text, style: const TextStyle(color: AppColors.mutedText)),
+          Text(text, style: TextStyle(color: AppColors.mutedText)),
           if (onRetry != null) ...[
             const SizedBox(height: 12),
             TextButton(

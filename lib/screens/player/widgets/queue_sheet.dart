@@ -45,12 +45,12 @@ class _QueueSheet extends ConsumerWidget {
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-            const Padding(
-              padding: EdgeInsets.all(16),
+            Padding(
+              padding: const EdgeInsets.all(16),
               child: Row(
                 children: [
-                  Icon(Icons.queue_music, color: AppColors.gold, size: 20),
-                  SizedBox(width: 8),
+                  const Icon(Icons.queue_music, color: AppColors.gold, size: 20),
+                  const SizedBox(width: 8),
                   Text('Up next',
                       style: TextStyle(
                           color: AppColors.cream,
@@ -76,7 +76,7 @@ class _QueueSheet extends ConsumerWidget {
                         ? const Icon(Icons.graphic_eq, color: AppColors.gold)
                         : Text(
                             '${pos + 1}',
-                            style: const TextStyle(
+                            style: TextStyle(
                                 color: AppColors.mutedText, fontSize: 14),
                           ),
                     title: Text(
@@ -94,7 +94,7 @@ class _QueueSheet extends ConsumerWidget {
                       '${lecture.sheikhName}  ·  ${Formatters.duration(lecture.durationSeconds)}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                           color: AppColors.mutedText, fontSize: 12),
                     ),
                   );

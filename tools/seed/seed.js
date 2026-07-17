@@ -328,7 +328,8 @@ async function seed() {
         audioUrl: SAMPLE_AUDIO[idx % SAMPLE_AUDIO.length],
         durationSeconds: 20 + (s.n % 40),
         order: idx + 1,
-        listenCount: 0,
+        // Varied listens so "most viewed recitation" is meaningful in dev.
+        listenCount: ((s.n * 37 + idx * 91) % 900) + 40,
       });
       ops++;
       recitationCount++;
