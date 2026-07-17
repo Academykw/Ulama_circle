@@ -51,3 +51,14 @@ app.*.map.json
 *.keystore
 *.jks
 .env*
+
+# Service account keys — real secrets, never commit
+**/service-account.json
+**/serviceAccount*.json
+**/*-firebase-adminsdk-*.json
+
+# Node
+**/node_modules/
+
+# Android build output
+/android/build/
