@@ -21,6 +21,7 @@ dependencies:
   firebase_messaging: ^16.4.1
   firebase_analytics: ^12.4.3
   firebase_crashlytics: ^5.2.4
+  cloud_functions: ^6.0.4
 
   # Local storage
   hive_ce: ^2.19.3
@@ -39,6 +40,9 @@ dependencies:
   carousel_slider: ^5.1.2
   cached_network_image: ^3.4.1
   share_plus: ^13.2.0
+
+  # Web-only admin panel: native browser file input for audio/image uploads.
+  web: ^1.1.0
 
   # Search
   algoliasearch: ^1.2.1

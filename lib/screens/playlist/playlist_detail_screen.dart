@@ -40,7 +40,7 @@ class PlaylistDetailScreen extends ConsumerWidget {
         actions: [
           PopupMenuButton<String>(
             color: AppColors.surfaceDark,
-            icon: const Icon(Icons.more_vert, color: AppColors.cream),
+            icon: Icon(Icons.more_vert, color: AppColors.cream),
             onSelected: (value) async {
               if (value == 'rename') {
                 final name =
@@ -56,12 +56,12 @@ class PlaylistDetailScreen extends ConsumerWidget {
                 }
               }
             },
-            itemBuilder: (_) => const [
+            itemBuilder: (_) => [
               PopupMenuItem(
                   value: 'rename',
                   child: Text('Rename',
                       style: TextStyle(color: AppColors.cream))),
-              PopupMenuItem(
+              const PopupMenuItem(
                   value: 'delete',
                   child: Text('Delete playlist',
                       style: TextStyle(color: Colors.redAccent))),
@@ -90,7 +90,7 @@ class PlaylistDetailScreen extends ConsumerWidget {
                   children: [
                     Text(
                       '${list.length} lecture${list.length == 1 ? '' : 's'}',
-                      style: const TextStyle(
+                      style: TextStyle(
                           color: AppColors.mutedText, fontSize: 13),
                     ),
                     const Spacer(),
@@ -120,7 +120,7 @@ class PlaylistDetailScreen extends ConsumerWidget {
                       onTap: () => openLecture(context, ref, lecture,
                           queue: list, index: i),
                       trailing: IconButton(
-                        icon: const Icon(Icons.remove_circle_outline,
+                        icon: Icon(Icons.remove_circle_outline,
                             color: AppColors.mutedText),
                         tooltip: 'Remove from playlist',
                         onPressed: () =>
@@ -142,14 +142,14 @@ class PlaylistDetailScreen extends ConsumerWidget {
       context: context,
       builder: (_) => AlertDialog(
         backgroundColor: AppColors.surfaceDark,
-        title: const Text('Delete playlist?',
+        title: Text('Delete playlist?',
             style: TextStyle(color: AppColors.cream)),
         content: Text('Delete "$name"? The lectures themselves aren’t removed.',
-            style: const TextStyle(color: AppColors.mutedText)),
+            style: TextStyle(color: AppColors.mutedText)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel',
+            child: Text('Cancel',
                 style: TextStyle(color: AppColors.mutedText)),
           ),
           TextButton(

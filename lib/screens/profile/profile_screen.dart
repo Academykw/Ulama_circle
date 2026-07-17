@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/theme_provider.dart';
+import '../../widgets/emoji_picker_sheet.dart';
 import '../notifications/notification_settings_screen.dart';
 
 /// Profile / settings tab. Header adapts to guest vs registered; below it,
@@ -18,28 +20,33 @@ class ProfileScreen extends ConsumerWidget {
     final name = (userDoc?.displayName.isNotEmpty ?? false)
         ? userDoc!.displayName
         : 'Guest User';
+    final emoji = userDoc?.avatarEmoji ?? '';
 
     return Scaffold(
       backgroundColor: AppColors.charcoal,
       appBar: AppBar(
         backgroundColor: AppColors.charcoal,
         title: const Text('Profile'),
-        titleTextStyle: const TextStyle(
+        titleTextStyle: TextStyle(
             color: AppColors.cream, fontSize: 22, fontWeight: FontWeight.w700),
       ),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          _AccountCard(name: name, isGuest: isGuest),
+          _AccountCard(name: name, isGuest: isGuest, emoji: emoji),
           const SizedBox(height: 24),
           const _SectionLabel('PREFERENCES'),
           _SettingsGroup(children: [
             _SettingsTile(
-              icon: Icons.nightlight_round,
+              icon: switch (ref.watch(themeChoiceProvider)) {
+                ThemeChoice.dark => Icons.dark_mode_outlined,
+                ThemeChoice.emerald => Icons.spa_outlined,
+                ThemeChoice.system => Icons.brightness_auto_outlined,
+              },
               iconColor: AppColors.olive,
               title: 'Appearance',
-              subtitle: 'Dark mode',
-              onTap: () => _soon(context, 'Theme options arrive later'),
+              subtitle: _themeLabel(ref.watch(themeChoiceProvider)),
+              onTap: () => _pickTheme(context, ref),
             ),
             _SettingsTile(
               icon: Icons.notifications_outlined,
@@ -87,12 +94,96 @@ class ProfileScreen extends ConsumerWidget {
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(content: Text(message)));
   }
+
+  static String _themeLabel(ThemeChoice c) => switch (c) {
+        ThemeChoice.dark => 'Dark',
+        ThemeChoice.emerald => 'Emerald',
+        ThemeChoice.system => 'System default',
+      };
+
+  void _pickTheme(BuildContext context, WidgetRef ref) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surfaceDark,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => Consumer(
+        builder: (context, ref, __) {
+          final current = ref.watch(themeChoiceProvider);
+          Widget option(ThemeChoice choice, String label, IconData icon) {
+            final selected = choice == current;
+            return ListTile(
+              leading: Icon(icon,
+                  color: selected ? AppColors.gold : AppColors.mutedText),
+              title: Text(label,
+                  style: TextStyle(
+                      color: AppColors.cream,
+                      fontWeight:
+                          selected ? FontWeight.w700 : FontWeight.w500)),
+              trailing: selected
+                  ? const Icon(Icons.check, color: AppColors.gold)
+                  : null,
+              onTap: () {
+                ref.read(themeChoiceProvider.notifier).set(choice);
+                Navigator.pop(context);
+              },
+            );
+          }
+
+          return SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 12),
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.mutedText.withValues(alpha: 0.4),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text('Appearance',
+                        style: TextStyle(
+                            color: AppColors.cream,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700)),
+                  ),
+                ),
+                option(ThemeChoice.system, 'System default',
+                    Icons.brightness_auto_outlined),
+                option(ThemeChoice.dark, 'Dark', Icons.dark_mode_outlined),
+                option(ThemeChoice.emerald, 'Emerald', Icons.spa_outlined),
+                const SizedBox(height: 12),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
 }
 
 class _AccountCard extends ConsumerWidget {
-  const _AccountCard({required this.name, required this.isGuest});
+  const _AccountCard(
+      {required this.name, required this.isGuest, required this.emoji});
   final String name;
   final bool isGuest;
+  final String emoji;
+
+  Future<void> _editAvatar(BuildContext context, WidgetRef ref) async {
+    final uid = ref.read(currentUidProvider);
+    if (uid == null) return;
+    final chosen = await showEmojiPickerSheet(context);
+    if (chosen != null) {
+      await ref.read(authControllerProvider).setAvatarEmoji(uid, chosen);
+    }
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -106,14 +197,42 @@ class _AccountCard extends ConsumerWidget {
         children: [
           Row(
             children: [
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: AppColors.gold.withValues(alpha: 0.18),
-                  borderRadius: BorderRadius.circular(14),
+              GestureDetector(
+                onTap: () => _editAvatar(context, ref),
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Container(
+                      width: 56,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        color: AppColors.gold.withValues(alpha: 0.18),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      alignment: Alignment.center,
+                      child: emoji.isEmpty
+                          ? const Icon(Icons.person,
+                              color: AppColors.gold, size: 30)
+                          : Text(emoji, style: const TextStyle(fontSize: 30)),
+                    ),
+                    Positioned(
+                      right: -4,
+                      bottom: -4,
+                      child: Container(
+                        width: 22,
+                        height: 22,
+                        decoration: BoxDecoration(
+                          color: AppColors.gold,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                              color: AppColors.surfaceDark, width: 2),
+                        ),
+                        child: Icon(Icons.edit,
+                            color: AppColors.charcoal, size: 12),
+                      ),
+                    ),
+                  ],
                 ),
-                child: const Icon(Icons.person, color: AppColors.gold, size: 30),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -121,14 +240,14 @@ class _AccountCard extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(name,
-                        style: const TextStyle(
+                        style: TextStyle(
                             color: AppColors.cream,
                             fontSize: 18,
                             fontWeight: FontWeight.w700)),
                     const SizedBox(height: 2),
                     Text(
                       isGuest ? 'Sign in to sync your data' : 'Signed in',
-                      style: const TextStyle(
+                      style: TextStyle(
                           color: AppColors.mutedText, fontSize: 13),
                     ),
                   ],
@@ -145,7 +264,7 @@ class _AccountCard extends ConsumerWidget {
                 foregroundColor: isGuest ? AppColors.charcoal : AppColors.cream,
                 side: isGuest
                     ? null
-                    : const BorderSide(color: AppColors.mutedText),
+                    : BorderSide(color: AppColors.mutedText),
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12)),
@@ -173,7 +292,7 @@ class _SectionLabel extends StatelessWidget {
       padding: const EdgeInsets.only(left: 4, bottom: 10),
       child: Text(
         text,
-        style: const TextStyle(
+        style: TextStyle(
           color: AppColors.mutedText,
           fontSize: 12,
           fontWeight: FontWeight.w700,
@@ -229,12 +348,12 @@ class _SettingsTile extends StatelessWidget {
         child: Icon(icon, color: iconColor, size: 20),
       ),
       title: Text(title,
-          style: const TextStyle(
+          style: TextStyle(
               color: AppColors.cream, fontWeight: FontWeight.w600)),
       subtitle: Text(subtitle,
-          style: const TextStyle(color: AppColors.mutedText, fontSize: 12)),
+          style: TextStyle(color: AppColors.mutedText, fontSize: 12)),
       trailing:
-          const Icon(Icons.chevron_right, color: AppColors.mutedText, size: 20),
+          Icon(Icons.chevron_right, color: AppColors.mutedText, size: 20),
     );
   }
 }
