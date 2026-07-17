@@ -32,20 +32,20 @@ class LibraryScreen extends StatelessWidget {
         appBar: AppBar(
           backgroundColor: AppColors.charcoal,
           title: const Text('Library'),
-          titleTextStyle: const TextStyle(
+          titleTextStyle: TextStyle(
               color: AppColors.cream, fontSize: 22, fontWeight: FontWeight.w700),
-          bottom: const TabBar(
+          bottom: TabBar(
             // Non-scrollable → the 4 tabs share the width evenly.
             indicatorColor: AppColors.gold,
             indicatorSize: TabBarIndicatorSize.label,
             indicatorWeight: 3,
             labelColor: AppColors.gold,
             unselectedLabelColor: AppColors.mutedText,
-            labelStyle: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+            labelStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
             unselectedLabelStyle:
-                TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-            labelPadding: EdgeInsets.symmetric(vertical: 4),
-            tabs: [
+                const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+            labelPadding: const EdgeInsets.symmetric(vertical: 4),
+            tabs: const [
               Tab(text: 'Downloads'),
               Tab(text: 'History'),
               Tab(text: 'Liked'),
@@ -100,7 +100,7 @@ class _DownloadsTab extends ConsumerWidget {
             children: [
               Text(
                 '${downloads.length} lecture${downloads.length == 1 ? '' : 's'} · ${Formatters.fileSize(totalMb)}',
-                style: const TextStyle(color: AppColors.mutedText, fontSize: 13),
+                style: TextStyle(color: AppColors.mutedText, fontSize: 13),
               ),
               const Spacer(),
               TextButton(
@@ -132,16 +132,16 @@ class _DownloadsTab extends ConsumerWidget {
       context: context,
       builder: (_) => AlertDialog(
         backgroundColor: AppColors.surfaceDark,
-        title: const Text('Clear all downloads?',
+        title: Text('Clear all downloads?',
             style: TextStyle(color: AppColors.cream)),
-        content: const Text(
+        content: Text(
           'This deletes every downloaded lecture from this device.',
           style: TextStyle(color: AppColors.mutedText),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel',
+            child: Text('Cancel',
                 style: TextStyle(color: AppColors.mutedText)),
           ),
           TextButton(
@@ -176,27 +176,27 @@ class _DownloadRow extends StatelessWidget {
         padding: const EdgeInsets.all(4),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(10),
-          gradient: const LinearGradient(
+          gradient: LinearGradient(
             colors: [AppColors.olive, AppColors.surfaceDark],
           ),
         ),
-        child: const Icon(Icons.play_arrow, color: AppColors.cream, size: 22),
+        child: Icon(Icons.play_arrow, color: AppColors.cream, size: 22),
       ),
       title: Text(
         record.title,
         maxLines: 2,
         overflow: TextOverflow.ellipsis,
-        style: const TextStyle(
+        style: TextStyle(
             color: AppColors.cream, fontSize: 14, fontWeight: FontWeight.w600),
       ),
       subtitle: Text(
         '${record.sheikhName}  ·  ${Formatters.fileSize(_DownloadsTab._fileSize(record.localFilePath) / (1024 * 1024))}',
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: const TextStyle(color: AppColors.mutedText, fontSize: 12),
+        style: TextStyle(color: AppColors.mutedText, fontSize: 12),
       ),
       trailing: IconButton(
-        icon: const Icon(Icons.delete_outline, color: AppColors.mutedText),
+        icon: Icon(Icons.delete_outline, color: AppColors.mutedText),
         tooltip: 'Delete download',
         onPressed: () =>
             ref.read(downloadControllerProvider.notifier).delete(record.id),
@@ -268,18 +268,18 @@ class _HistoryTab extends ConsumerWidget {
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(10),
-                    gradient: const LinearGradient(
+                    gradient: LinearGradient(
                       colors: [AppColors.olive, AppColors.surfaceDark],
                     ),
                   ),
-                  child: const Icon(Icons.play_arrow,
+                  child: Icon(Icons.play_arrow,
                       color: AppColors.cream, size: 22),
                 ),
                 title: Text(
                   entry.title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                       color: AppColors.cream,
                       fontSize: 14,
                       fontWeight: FontWeight.w600),
@@ -293,7 +293,7 @@ class _HistoryTab extends ConsumerWidget {
                           : entry.sheikhName,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                           color: AppColors.mutedText, fontSize: 12),
                     ),
                     if (entry.progress > 0) ...[

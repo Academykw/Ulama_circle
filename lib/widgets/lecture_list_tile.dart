@@ -58,7 +58,7 @@ class LectureListTile extends StatelessWidget {
                 textAlign: TextAlign.center,
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
+                style: TextStyle(
                   color: AppColors.cream,
                   fontSize: 9.5,
                   height: 1.15,
@@ -76,7 +76,7 @@ class LectureListTile extends StatelessWidget {
                     lecture.title,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: AppColors.cream,
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
@@ -92,17 +92,17 @@ class LectureListTile extends StatelessWidget {
                             lecture.sheikhName,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
+                            style: TextStyle(
                                 color: AppColors.mutedText, fontSize: 12),
                           ),
                         ),
-                        const Text('  •  ',
+                        Text('  •  ',
                             style: TextStyle(
                                 color: AppColors.mutedText, fontSize: 12)),
                       ],
                       Text(
                         '${Formatters.titleCase(lecture.language)}  •  ${Formatters.duration(lecture.durationSeconds)}',
-                        style: const TextStyle(
+                        style: TextStyle(
                             color: AppColors.mutedText, fontSize: 12),
                       ),
                     ],

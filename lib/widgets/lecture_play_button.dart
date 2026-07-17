@@ -97,7 +97,7 @@ class LecturePlayButton extends ConsumerWidget {
         shape: BoxShape.circle,
         border: Border.all(color: AppColors.charcoal, width: 2),
       ),
-      child: const Icon(Icons.check, color: AppColors.cream, size: 9),
+      child: Icon(Icons.check, color: AppColors.cream, size: 9),
     );
   }
 }

@@ -72,7 +72,7 @@ class LectureCard extends StatelessWidget {
                             textAlign: TextAlign.center,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: AppColors.cream,
                               fontSize: 13,
                               height: 1.2,
@@ -90,7 +90,7 @@ class LectureCard extends StatelessWidget {
                         height: 34,
                         decoration:
                             BoxDecoration(color: accent, shape: BoxShape.circle),
-                        child: const Icon(Icons.play_arrow,
+                        child: Icon(Icons.play_arrow,
                             color: AppColors.charcoal, size: 20),
                       ),
                     ),
@@ -103,7 +103,7 @@ class LectureCard extends StatelessWidget {
               lecture.title,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                 color: AppColors.cream,
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
@@ -115,7 +115,7 @@ class LectureCard extends StatelessWidget {
               '${Formatters.titleCase(lecture.language)}  •  ${Formatters.duration(lecture.durationSeconds)}',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(color: AppColors.mutedText, fontSize: 11),
+              style: TextStyle(color: AppColors.mutedText, fontSize: 11),
             ),
           ],
         ),
