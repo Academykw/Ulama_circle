@@ -27,13 +27,13 @@ class CategoriesScreen extends ConsumerWidget {
       body: categories.when(
         loading: () => const Center(
             child: CircularProgressIndicator(color: AppColors.gold)),
-        error: (_, __) => const Center(
+        error: (_, __) => Center(
           child: Text('Couldn’t load categories',
               style: TextStyle(color: AppColors.mutedText)),
         ),
         data: (list) {
           if (list.isEmpty) {
-            return const Center(
+            return Center(
               child: Text('No categories yet',
                   style: TextStyle(color: AppColors.mutedText)),
             );
@@ -92,7 +92,7 @@ class CategoryTile extends StatelessWidget {
               category.name,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                 color: AppColors.cream,
                 fontSize: 16,
                 fontWeight: FontWeight.w700,

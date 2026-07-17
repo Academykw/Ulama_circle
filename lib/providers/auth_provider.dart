@@ -33,6 +33,15 @@ final isAdminProvider = FutureProvider<bool>((ref) async {
   return ref.watch(authServiceProvider).isAdmin(uid);
 });
 
+/// One-shot "user is active now" ping — writes lastActiveAt for the current
+/// user. Watched by the AuthGate so it fires each app open (per uid), feeding
+/// the admin dashboard's daily-active-users metric.
+final activityPingProvider = FutureProvider<void>((ref) async {
+  final uid = ref.watch(currentUidProvider);
+  if (uid == null) return;
+  await ref.read(authServiceProvider).touchLastActive(uid);
+});
+
 /// Actions the UI calls. Kept as a small controller so screens don't touch
 /// AuthService directly and error handling lives in one place.
 final authControllerProvider =
@@ -60,4 +69,8 @@ class AuthController {
 
   Future<void> sendPasswordReset(String email) =>
       _service.sendPasswordReset(email);
+
+  /// Sets the current user's emoji avatar (no-op when signed out).
+  Future<void> setAvatarEmoji(String uid, String emoji) =>
+      _service.setAvatarEmoji(uid, emoji);
 }

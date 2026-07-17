@@ -131,18 +131,33 @@ class AuthService {
             ? user.displayName!.trim()
             : (isGuest ? 'Guest' : (user.email ?? 'User'));
 
-    await ref.set(
-      AppUser(
+    await ref.set({
+      ...AppUser(
         uid: user.uid,
         displayName: name,
         isGuest: isGuest,
       ).toFirestore(),
-    );
+      // For the admin dashboard's "new users" metric (future signups only).
+      'createdAt': FieldValue.serverTimestamp(),
+    });
   }
 
   Stream<AppUser?> userDocStream(String uid) => _userDoc(uid)
       .snapshots()
       .map((snap) => snap.exists ? AppUser.fromFirestore(snap) : null);
+
+  /// Records that the user opened the app now — powers the admin "daily active
+  /// users" metric. Best-effort; merged so it never clobbers other fields.
+  Future<void> touchLastActive(String uid) => _userDoc(uid).set(
+        {'lastActiveAt': FieldValue.serverTimestamp()},
+        SetOptions(merge: true),
+      );
+
+  /// Sets (or clears, with '') the user's emoji avatar.
+  Future<void> setAvatarEmoji(String uid, String emoji) => _userDoc(uid).set(
+        {'avatarEmoji': emoji},
+        SetOptions(merge: true),
+      );
 
   /// True if an `admins/{uid}` marker doc exists. Used to gate the admin panel;
   /// on the mobile app it just controls whether admin-only affordances show.

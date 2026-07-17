@@ -145,7 +145,7 @@ class _BannerCard extends StatelessWidget {
               lecture.title,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                 color: AppColors.cream,
                 fontSize: 19,
                 fontWeight: FontWeight.w700,
@@ -160,18 +160,18 @@ class _BannerCard extends StatelessWidget {
                     lecture.sheikhName,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: AppColors.mutedText,
                       fontSize: 13,
                     ),
                   ),
                 ),
                 const SizedBox(width: 8),
-                const Icon(Icons.schedule, size: 14, color: AppColors.mutedText),
+                Icon(Icons.schedule, size: 14, color: AppColors.mutedText),
                 const SizedBox(width: 4),
                 Text(
                   Formatters.duration(lecture.durationSeconds),
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: AppColors.mutedText,
                     fontSize: 13,
                   ),
@@ -181,7 +181,7 @@ class _BannerCard extends StatelessWidget {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(color: accent, shape: BoxShape.circle),
-                  child: const Icon(Icons.play_arrow,
+                  child: Icon(Icons.play_arrow,
                       color: AppColors.charcoal, size: 24),
                 ),
               ],
@@ -292,7 +292,7 @@ class _BannerMessage extends StatelessWidget {
         children: [
           Icon(icon, color: AppColors.mutedText, size: 32),
           const SizedBox(height: 12),
-          Text(text, style: const TextStyle(color: AppColors.mutedText)),
+          Text(text, style: TextStyle(color: AppColors.mutedText)),
         ],
       ),
     );
