@@ -7,12 +7,14 @@ class AppUser {
   final String displayName;
   final bool isGuest;
   final List<String> favorites;
+  final String avatarEmoji; // user-chosen emoji avatar; '' = default icon
 
   const AppUser({
     required this.uid,
     required this.displayName,
     required this.isGuest,
     this.favorites = const [],
+    this.avatarEmoji = '',
   });
 
   factory AppUser.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
@@ -22,6 +24,7 @@ class AppUser {
       displayName: data['displayName'] as String? ?? '',
       isGuest: data['isGuest'] as bool? ?? false,
       favorites: List<String>.from(data['favorites'] as List? ?? const []),
+      avatarEmoji: data['avatarEmoji'] as String? ?? '',
     );
   }
 
@@ -31,6 +34,7 @@ class AppUser {
         'displayName': displayName,
         'isGuest': isGuest,
         'favorites': favorites,
+        'avatarEmoji': avatarEmoji,
         'history': const [],
       };
 }

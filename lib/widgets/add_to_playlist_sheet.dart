@@ -42,12 +42,12 @@ class _AddToPlaylistSheet extends ConsumerWidget {
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-            const Padding(
-              padding: EdgeInsets.all(16),
+            Padding(
+              padding: const EdgeInsets.all(16),
               child: Row(
                 children: [
-                  Icon(Icons.playlist_add, color: AppColors.gold, size: 20),
-                  SizedBox(width: 8),
+                  const Icon(Icons.playlist_add, color: AppColors.gold, size: 20),
+                  const SizedBox(width: 8),
                   Text('Add to playlist',
                       style: TextStyle(
                           color: AppColors.cream,
@@ -63,11 +63,11 @@ class _AddToPlaylistSheet extends ConsumerWidget {
                       color: AppColors.gold, fontWeight: FontWeight.w600)),
               onTap: () => _createPlaylist(context, controller),
             ),
-            const Divider(color: AppColors.charcoal, height: 1),
+            Divider(color: AppColors.charcoal, height: 1),
             Flexible(
               child: playlists.isEmpty
-                  ? const Padding(
-                      padding: EdgeInsets.all(24),
+                  ? Padding(
+                      padding: const EdgeInsets.all(24),
                       child: Text('No playlists yet — create one above.',
                           style: TextStyle(color: AppColors.mutedText)),
                     )
@@ -78,13 +78,13 @@ class _AddToPlaylistSheet extends ConsumerWidget {
                         final p = playlists[i];
                         final inPlaylist = p.lectureIds.contains(lectureId);
                         return ListTile(
-                          leading: const Icon(Icons.queue_music,
+                          leading: Icon(Icons.queue_music,
                               color: AppColors.mutedText),
                           title: Text(p.name,
-                              style: const TextStyle(color: AppColors.cream)),
+                              style: TextStyle(color: AppColors.cream)),
                           subtitle: Text(
                               '${p.count} lecture${p.count == 1 ? '' : 's'}',
-                              style: const TextStyle(
+                              style: TextStyle(
                                   color: AppColors.mutedText, fontSize: 12)),
                           trailing: Icon(
                             inPlaylist
@@ -130,22 +130,22 @@ Future<String?> _promptName(BuildContext context, {String initial = ''}) {
     builder: (_) => AlertDialog(
       backgroundColor: AppColors.surfaceDark,
       title: Text(initial.isEmpty ? 'New playlist' : 'Rename playlist',
-          style: const TextStyle(color: AppColors.cream)),
+          style: TextStyle(color: AppColors.cream)),
       content: TextField(
         controller: ctrl,
         autofocus: true,
-        style: const TextStyle(color: AppColors.cream),
-        decoration: const InputDecoration(
+        style: TextStyle(color: AppColors.cream),
+        decoration: InputDecoration(
           hintText: 'Playlist name',
           hintStyle: TextStyle(color: AppColors.mutedText),
-          focusedBorder: UnderlineInputBorder(
+          focusedBorder: const UnderlineInputBorder(
               borderSide: BorderSide(color: AppColors.gold)),
         ),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel',
+          child: Text('Cancel',
               style: TextStyle(color: AppColors.mutedText)),
         ),
         TextButton(
