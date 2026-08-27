@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Deep emerald — matches the app's background so the native launch
+         window flows seamlessly into the Flutter splash. -->
+    <color name="splash_emerald">#0D2620</color>
+</resources>

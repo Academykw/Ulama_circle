@@ -22,7 +22,7 @@ class CategoriesScreen extends ConsumerWidget {
     final categories = ref.watch(categoriesProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.charcoal,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(title: const Text('Categories')),
       body: categories.when(
         loading: () => const Center(

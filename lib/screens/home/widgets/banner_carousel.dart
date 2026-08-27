@@ -8,6 +8,7 @@ import '../../../core/utils/play_lecture.dart';
 import '../../../models/lecture_model.dart';
 import '../../../providers/content_providers.dart';
 import '../../../providers/filter_providers.dart';
+import '../../../widgets/gold_play_button.dart';
 
 /// Rotating banner of featured lectures at the top of Home. Lectures have no
 /// cover art, so each slide is a branded gradient card. Tapping a slide will
@@ -30,7 +31,7 @@ class _BannerCarouselState extends ConsumerState<BannerCarousel> {
   @override
   Widget build(BuildContext context) {
     final featured = ref.watch(featuredLecturesProvider);
-    final languageFilter = ref.watch(languageFilterProvider);
+    final langFilter = ref.watch(languageFilterProvider);
 
     return featured.when(
       loading: () => const _BannerSkeleton(height: _height),
@@ -42,16 +43,17 @@ class _BannerCarouselState extends ConsumerState<BannerCarousel> {
       data: (all) {
         // Apply the active language filter client-side (featured is a small,
         // bounded set, so no extra query is needed).
-        final lectures = languageFilter == null
-            ? all
-            : all.where((l) => l.language == languageFilter).toList();
+        final lectures =
+            all.where((l) => languageMatches(langFilter, l.language)).toList();
         if (lectures.isEmpty) {
           return _BannerMessage(
             height: _height,
             icon: Icons.auto_awesome_outlined,
-            text: languageFilter == null
+            text: langFilter.isEmpty
                 ? 'Featured lectures will appear here'
-                : 'No featured lectures in ${Formatters.titleCase(languageFilter)}',
+                : langFilter.length == 1
+                    ? 'No featured lectures in ${Formatters.titleCase(langFilter.first)}'
+                    : 'No featured lectures in your selected languages',
           );
         }
         return Column(
@@ -60,7 +62,6 @@ class _BannerCarouselState extends ConsumerState<BannerCarousel> {
               itemCount: lectures.length,
               itemBuilder: (context, index, _) => _BannerCard(
                 lecture: lectures[index],
-                accent: _accentFor(index),
                 onTap: () => openLecture(context, ref, lectures[index],
                     queue: lectures, index: index),
               ),
@@ -83,135 +84,159 @@ class _BannerCarouselState extends ConsumerState<BannerCarousel> {
     );
   }
 
-  // Alternate the accent tint so consecutive slides feel distinct.
-  Color _accentFor(int index) =>
-      index.isEven ? AppColors.gold : AppColors.olive;
 }
 
-class _BannerCard extends StatelessWidget {
-  const _BannerCard({
-    required this.lecture,
-    required this.accent,
-    required this.onTap,
-  });
+class _BannerCard extends ConsumerWidget {
+  const _BannerCard({required this.lecture, required this.onTap});
 
   final LectureModel lecture;
-  final Color accent;
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Prefer the lecture's own artwork, then the lecturer's photo, then a plain
+    // emerald cover.
+    final url = lecture.artworkUrl.isNotEmpty
+        ? lecture.artworkUrl
+        : (ref.watch(sheikhByIdProvider(lecture.sheikhId))?.photoUrl ?? '');
+    final hasArt = url.isNotEmpty;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: double.infinity,
         margin: const EdgeInsets.symmetric(horizontal: 4),
-        padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              accent.withValues(alpha: 0.35),
-              AppColors.surfaceDark,
-              AppColors.charcoal,
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: AppColors.goldMid.withValues(alpha: 0.20)),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(22),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // Background: artwork / lecturer photo if present, else emerald.
+              if (hasArt)
+                Image.network(url,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => const _EmeraldCover())
+              else
+                const _EmeraldCover(),
+              // Dark bottom-up scrim so the text always reads.
+              const DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.bottomCenter,
+                    end: Alignment.topCenter,
+                    stops: [0.10, 0.55, 1.0],
+                    colors: [
+                      Color(0xF0071410),
+                      Color(0x80071410),
+                      Color(0x26071410),
+                    ],
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(18),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const _FeaturedPill(),
+                        const SizedBox(width: 8),
+                        _Chip(text: Formatters.titleCase(lecture.category)),
+                        const SizedBox(width: 8),
+                        _Chip(text: Formatters.titleCase(lecture.language)),
+                      ],
+                    ),
+                    const Spacer(),
+                    Text(
+                      lecture.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTheme.display(size: 21, weight: FontWeight.w700)
+                          .copyWith(height: 1.2, color: Colors.white),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            '${lecture.sheikhName}  ·  ${Formatters.duration(lecture.durationSeconds)}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                                color: Color(0xFFCFD9D4), fontSize: 13),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        const GoldPlayButton(size: 38),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
-          border: Border.all(color: accent.withValues(alpha: 0.4)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                _Chip(text: 'Featured', color: accent),
-                const SizedBox(width: 8),
-                _Chip(
-                  text: Formatters.titleCase(lecture.category),
-                  color: AppColors.cream,
-                  outlined: true,
-                ),
-                const SizedBox(width: 8),
-                _Chip(
-                  text: Formatters.titleCase(lecture.language),
-                  color: AppColors.cream,
-                  outlined: true,
-                ),
-              ],
-            ),
-            const Spacer(),
-            Text(
-              lecture.title,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: AppColors.cream,
-                fontSize: 19,
-                fontWeight: FontWeight.w700,
-                height: 1.2,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    lecture.sheikhName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: AppColors.mutedText,
-                      fontSize: 13,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Icon(Icons.schedule, size: 14, color: AppColors.mutedText),
-                const SizedBox(width: 4),
-                Text(
-                  Formatters.duration(lecture.durationSeconds),
-                  style: TextStyle(
-                    color: AppColors.mutedText,
-                    fontSize: 13,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(color: accent, shape: BoxShape.circle),
-                  child: Icon(Icons.play_arrow,
-                      color: AppColors.charcoal, size: 24),
-                ),
-              ],
-            ),
-          ],
         ),
       ),
     );
   }
 }
 
+/// Plain emerald cover used when a featured lecture has no artwork image.
+class _EmeraldCover extends StatelessWidget {
+  const _EmeraldCover();
+  @override
+  Widget build(BuildContext context) => const DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF2A4C3F), Color(0xFF0D2620)],
+          ),
+        ),
+      );
+}
+
+/// Solid-gold "FEATURED" pill with dark text.
+class _FeaturedPill extends StatelessWidget {
+  const _FeaturedPill();
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
+        decoration: BoxDecoration(
+          color: AppColors.gold,
+          borderRadius: BorderRadius.circular(100),
+        ),
+        child: const Text('FEATURED',
+            style: TextStyle(
+                color: Color(0xFF0D2620),
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.4)),
+      );
+}
+
+/// Translucent white outlined pill (category / language) over the cover.
 class _Chip extends StatelessWidget {
-  const _Chip({required this.text, required this.color, this.outlined = false});
+  const _Chip({required this.text});
   final String text;
-  final Color color;
-  final bool outlined;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
       decoration: BoxDecoration(
-        color: outlined ? Colors.transparent : color.withValues(alpha: 0.2),
-        borderRadius: BorderRadius.circular(20),
-        border: outlined ? Border.all(color: color.withValues(alpha: 0.5)) : null,
+        color: Colors.white.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(100),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
       ),
       child: Text(
         text,
-        style: TextStyle(
-          color: outlined ? color : color,
+        style: const TextStyle(
+          color: Color(0xFFF5F1E6),
           fontSize: 11,
           fontWeight: FontWeight.w600,
         ),

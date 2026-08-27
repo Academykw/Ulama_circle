@@ -78,7 +78,7 @@ class _CategoryDetailScreenState extends ConsumerState<CategoryDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.charcoal,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(title: Text(widget.category.name)),
       bottomNavigationBar: const SafeArea(top: false, child: MiniPlayer()),
       body: _buildBody(),

@@ -18,7 +18,7 @@ if (keystorePropertiesFile.exists()) {
 }
 android {
     namespace = "com.ulama.circle.lectures.ulama_circle"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -32,7 +32,7 @@ android {
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
+        targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
@@ -56,6 +56,15 @@ android {
             } else {
                 signingConfigs.getByName("debug")
             }
+            // AGP 9 turns R8 minification + resource shrinking ON by default for
+            // release. That stripped audio_service's notification-icon drawables
+            // (they're only referenced by string name at runtime), which broke
+            // the media notification ("You must specify an icon resource id to
+            // build a CustomAction"). We ship no ProGuard keep rules, so keep
+            // both OFF — R8 would also risk breaking other reflection-based
+            // plugins. Revisit later with proper keep rules if APK size matters.
+            isMinifyEnabled = false
+            isShrinkResources = false
         }
     }
 }

@@ -112,6 +112,72 @@ class AuthService {
   Future<void> sendPasswordReset(String email) =>
       _auth.sendPasswordResetEmail(email: email.trim());
 
+  /// Permanently deletes the signed-in user's account and all their Firestore
+  /// data. **Irreversible.** Firebase blocks account deletion when the last
+  /// sign-in is stale, so we re-authenticate and retry once (Google users are
+  /// re-prompted; email/password users are asked to sign in again).
+  Future<void> deleteAccount() async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    // 1. Firestore data first, while we still hold the uid + auth context:
+    //    the playlists subcollection, then the user doc (favorites/history are
+    //    fields on the doc, so they go with it).
+    await _deleteUserData(user.uid);
+
+    // 2. The auth account itself, re-authenticating if the session is stale.
+    try {
+      await user.delete();
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'requires-recent-login') {
+        await _reauthenticate(user);
+        await user.delete();
+      } else {
+        rethrow;
+      }
+    }
+
+    // 3. Drop the Google session so the picker re-prompts next time.
+    try {
+      if (_googleInitialized) await GoogleSignIn.instance.signOut();
+    } catch (_) {}
+  }
+
+  Future<void> _deleteUserData(String uid) async {
+    final ref = _userDoc(uid);
+    // Subcollections don't cascade on the client — delete playlists explicitly.
+    final playlists =
+        await ref.collection(AppConstants.playlistsSubcollection).get();
+    for (final d in playlists.docs) {
+      await d.reference.delete();
+    }
+    await ref.delete();
+  }
+
+  Future<void> _reauthenticate(User user) async {
+    final providers = user.providerData.map((p) => p.providerId).toSet();
+    if (providers.contains('google.com')) {
+      await _ensureGoogleInitialized();
+      final account = await GoogleSignIn.instance
+          .authenticate(scopeHint: const ['email']);
+      final idToken = account.authentication.idToken;
+      if (idToken == null) {
+        throw FirebaseAuthException(
+          code: 'google-no-id-token',
+          message: 'Google sign-in did not return an ID token.',
+        );
+      }
+      final credential = GoogleAuthProvider.credential(idToken: idToken);
+      await user.reauthenticateWithCredential(credential);
+    } else {
+      // Email/password (or unknown) — we don't hold the password here.
+      throw FirebaseAuthException(
+        code: 'requires-recent-login',
+        message: 'Please sign out and sign in again, then delete your account.',
+      );
+    }
+  }
+
   // ---- User doc + admin check ----
 
   /// Creates `users/{uid}` on first sign-in; leaves it untouched if it exists
