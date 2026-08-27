@@ -4,6 +4,12 @@
 class AppConstants {
   AppConstants._();
 
+  // ---- Feature flags ----
+  /// When true, offline downloads require Premium (Option A). Enforced: a
+  /// non-Premium tap on Download shows the "Downloads are Premium" sheet instead
+  /// of downloading. (Auto-caching during playback is disabled regardless.)
+  static const bool downloadsRequirePremium = true;
+
   // ---- Firestore collection names ----
   static const String lecturesCollection = 'lectures';
   static const String sheikhsCollection = 'sheikhs';
@@ -27,7 +33,16 @@ class AppConstants {
   static const String metaKeyIsGuest = 'is_guest';
   static const String metaKeyOnboardingSeen = 'onboarding_seen';
   static const String metaKeyThemeMode = 'theme_mode';
+  static const String metaKeyLocale = 'app_locale'; // '' = follow system
+  /// Chosen content languages (subset of supportedLanguages); empty = all.
+  static const String metaKeyPreferredLanguages = 'preferred_languages';
+  /// Whether the first-launch "choose your languages" step has been completed.
+  static const String metaKeyLanguagesChosen = 'languages_chosen';
+  static const String metaKeyPlayCount = 'play_count_total'; // for review prompt
+  static const String metaKeyReviewAsked = 'review_asked';
   static const String metaKeyNotifications = 'notifications_inbox';
+  /// One-time "enable background playback" tip for aggressive-OEM devices.
+  static const String metaKeyBgTipShown = 'bg_tip_shown';
   /// Prefix for per-topic push toggles, e.g. 'notif_pref_general_announcements'.
   static const String metaKeyNotifPrefPrefix = 'notif_pref_';
 

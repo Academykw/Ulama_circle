@@ -11,14 +11,15 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
 
     <application
-        android:label="ulama_circle"
+        android:label="Ulama Circle"
         android:name="${applicationName}"
         android:networkSecurityConfig="@xml/network_security_config"
         android:icon="@mipmap/ic_launcher">
-        <!-- android:name switched to AudioServiceActivity so background audio +
-             media notifications work (audio_service). -->
+        <!-- MainActivity extends AudioServiceActivity (background audio + media
+             notifications) and adds the moveTaskToBack channel for "back =
+             minimise". -->
         <activity
-            android:name="com.ryanheise.audioservice.AudioServiceActivity"
+            android:name="com.ulama.circle.lectures.ulama_circle.MainActivity"
             android:exported="true"
             android:launchMode="singleTop"
             android:taskAffinity=""
@@ -37,6 +38,23 @@
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+            <!-- Deep links: shared lecture opens straight in the app.
+                 Verified Android App Link (needs assetlinks.json on the host). -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="https"
+                    android:host="iscollection.web.app"
+                    android:pathPrefix="/lecture"/>
+            </intent-filter>
+            <!-- Custom scheme fallback (works even before App Link verification). -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="ulamacircle" android:host="lecture"/>
             </intent-filter>
         </activity>
 
