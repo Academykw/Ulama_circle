@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:audio_service/audio_service.dart';
 import 'package:just_audio/just_audio.dart';
 
@@ -5,7 +7,29 @@ import 'package:just_audio/just_audio.dart';
 /// so playback continues in the background and shows a media notification /
 /// lock-screen controls. This is the single player instance for the whole app.
 class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
-  final AudioPlayer _player = AudioPlayer();
+  // Buffer tuning balances two things:
+  //   • fast START — [bufferForPlaybackDuration] is how much must buffer before
+  //     playback begins; kept low (1s) so streaming starts quickly.
+  //   • smooth PLAYBACK — [minBuffer]/[maxBuffer] keep a healthy runway ahead so
+  //     the audio doesn't underrun/crackle on slower connections.
+  final AudioPlayer _player = AudioPlayer(
+    audioLoadConfiguration: const AudioLoadConfiguration(
+      androidLoadControl: AndroidLoadControl(
+        // Keep a bigger runway ahead so brief network hiccups don't underrun
+        // the buffer and stall playback. Start latency is governed by
+        // bufferForPlaybackDuration (1s), so raising min/max doesn't slow the
+        // initial start — it just makes ongoing playback more hiccup-proof.
+        minBufferDuration: Duration(seconds: 30),
+        maxBufferDuration: Duration(seconds: 120),
+        bufferForPlaybackDuration: Duration(milliseconds: 1000),
+        bufferForPlaybackAfterRebufferDuration: Duration(seconds: 3),
+      ),
+      darwinLoadControl: DarwinLoadControl(
+        automaticallyWaitsToMinimizeStalling: false,
+        preferredForwardBufferDuration: Duration(seconds: 30),
+      ),
+    ),
+  );
 
   /// Set by PlaybackController so notification / lock-screen skip buttons drive
   /// the queue. Completion-driven auto-advance is handled by the controller too
@@ -13,9 +37,25 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
   Future<void> Function()? onSkipToNext;
   Future<void> Function()? onSkipToPrevious;
 
+  /// Emits whenever playback fails (e.g. the stream drops on a bad network).
+  /// The controller listens to auto-retry; the UI listens to show a message.
+  final StreamController<Object> _errors = StreamController<Object>.broadcast();
+  Stream<Object> get errorStream => _errors.stream;
+
   AudioPlayerHandler() {
-    // Push just_audio state changes out to the OS notification.
-    _player.playbackEventStream.listen(_broadcastState);
+    // Push just_audio state changes out to the OS notification. A network drop
+    // surfaces as a stream ERROR here — catch it so it doesn't go unhandled,
+    // flag the notification as errored, and let listeners react/retry.
+    _player.playbackEventStream.listen(
+      _broadcastState,
+      onError: (Object e, StackTrace _) {
+        _errors.add(e);
+        playbackState.add(playbackState.value.copyWith(
+          processingState: AudioProcessingState.error,
+          playing: false,
+        ));
+      },
+    );
 
     // Keep the media notification's duration accurate once known.
     _player.durationStream.listen((duration) {
@@ -35,6 +75,7 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
       _player.processingStateStream;
   Duration? get duration => _player.duration;
   Duration get position => _player.position;
+  bool get playing => _player.playing;
 
   /// Repeat-one is delegated to just_audio's loop mode (seamless); repeat-off /
   /// -all are handled by the controller on completion.

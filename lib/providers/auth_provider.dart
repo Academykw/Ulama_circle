@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/app_user_model.dart';
 import '../services/auth_service.dart';
+import 'local_db_provider.dart';
 
 /// Single shared AuthService instance.
 final authServiceProvider = Provider<AuthService>((ref) => AuthService());
@@ -26,6 +27,10 @@ final currentUserDocProvider = StreamProvider<AppUser?>((ref) {
   return ref.watch(authServiceProvider).userDocStream(uid);
 });
 
+/// Whether the current user has Premium (unlocks offline downloads).
+final isPremiumProvider = Provider<bool>((ref) =>
+    ref.watch(currentUserDocProvider).asData?.value?.isPremium ?? false);
+
 /// Whether the current user is an admin (has an `admins/{uid}` marker doc).
 final isAdminProvider = FutureProvider<bool>((ref) async {
   final uid = ref.watch(currentUidProvider);
@@ -44,12 +49,13 @@ final activityPingProvider = FutureProvider<void>((ref) async {
 
 /// Actions the UI calls. Kept as a small controller so screens don't touch
 /// AuthService directly and error handling lives in one place.
-final authControllerProvider =
-    Provider<AuthController>((ref) => AuthController(ref.watch(authServiceProvider)));
+final authControllerProvider = Provider<AuthController>(
+    (ref) => AuthController(ref.watch(authServiceProvider), ref));
 
 class AuthController {
-  AuthController(this._service);
+  AuthController(this._service, this._ref);
   final AuthService _service;
+  final Ref _ref;
 
   Future<void> signInAsGuest() => _service.signInAsGuest();
 
@@ -66,6 +72,19 @@ class AuthController {
       _service.registerWithEmail(email, password, displayName: displayName);
 
   Future<void> signOut() => _service.signOut();
+
+  /// Permanently deletes the account (Firebase Auth + Firestore data) and wipes
+  /// on-device data so nothing from the deleted account lingers for the next
+  /// user. Throws on failure (e.g. cancelled re-auth) so the UI can report it.
+  Future<void> deleteAccount() async {
+    await _service.deleteAccount();
+    try {
+      final db = _ref.read(localDbServiceProvider);
+      await db.clearHistory();
+      await db.clearNotifications();
+      await db.clearAllDownloadRecords();
+    } catch (_) {/* best-effort local cleanup */}
+  }
 
   Future<void> sendPasswordReset(String email) =>
       _service.sendPasswordReset(email);

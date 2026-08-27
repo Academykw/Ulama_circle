@@ -8,6 +8,7 @@ class AppUser {
   final bool isGuest;
   final List<String> favorites;
   final String avatarEmoji; // user-chosen emoji avatar; '' = default icon
+  final bool isPremium; // unlocks offline downloads
 
   const AppUser({
     required this.uid,
@@ -15,6 +16,7 @@ class AppUser {
     required this.isGuest,
     this.favorites = const [],
     this.avatarEmoji = '',
+    this.isPremium = false,
   });
 
   factory AppUser.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
@@ -25,6 +27,7 @@ class AppUser {
       isGuest: data['isGuest'] as bool? ?? false,
       favorites: List<String>.from(data['favorites'] as List? ?? const []),
       avatarEmoji: data['avatarEmoji'] as String? ?? '',
+      isPremium: data['isPremium'] as bool? ?? false,
     );
   }
 
