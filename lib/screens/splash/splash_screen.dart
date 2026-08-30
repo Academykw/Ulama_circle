@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../core/theme/app_theme.dart';
+import 'package:google_fonts/google_fonts.dart';
 
+import '../../core/theme/app_theme.dart';
 
 class SplashScreen extends StatelessWidget {
   const SplashScreen({super.key});
@@ -8,26 +9,62 @@ class SplashScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.charcoal,
+      backgroundColor: Colors.transparent,
       body: Center(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.circle_outlined, color: AppColors.gold, size: 56),
+            Container(
+              width: 132,
+              height: 132,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.gold.withValues(alpha: 0.22),
+                    blurRadius: 48,
+                    spreadRadius: 4,
+                  ),
+                ],
+              ),
+              child: SizedBox(
+                width: 120,
+                height: 120,
+                child: Image.asset(
+                  'assets/images/ulama_splash_emblem.png',
+                  fit: BoxFit.contain,
+                  filterQuality: FilterQuality.high,
+                ),
+              ),
+            ),
+
+
             const SizedBox(height: 16),
             Text(
               'Ulama Circle',
-              style: TextStyle(
+              style: GoogleFonts.petrona(
+                fontSize: 30,
+                fontWeight: FontWeight.w700,
                 color: AppColors.cream,
-                fontSize: 20,
-                fontWeight: FontWeight.w600,
                 letterSpacing: 0.5,
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 12),
+            // Gold rule between the wordmark and tagline.
+            Container(
+              width: 46,
+              height: 2,
+              decoration: BoxDecoration(
+                gradient: AppColors.goldGradient,
+                borderRadius: BorderRadius.circular(1),
+              ),
+            ),
+            const SizedBox(height: 14),
             Text(
-              'lectures from Nigeria and beyond',
-              style: TextStyle(color: AppColors.mutedText, fontSize: 12),
+              'Lectures & recitations for every seeker',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: AppColors.mutedText, fontSize: 13),
             ),
           ],
         ),

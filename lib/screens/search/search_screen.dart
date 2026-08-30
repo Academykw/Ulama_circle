@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/icons/px.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/play_lecture.dart';
 import '../../models/lecture_model.dart';
@@ -47,10 +48,14 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     final results = ref.watch(searchResultsProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.charcoal,
+      backgroundColor: Colors.transparent,
       bottomNavigationBar: const SafeArea(top: false, child: MiniPlayer()),
       appBar: AppBar(
         titleSpacing: 0,
+        leading: IconButton(
+          icon: const PxIcon(Px.caretLeft, size: 20),
+          onPressed: () => Navigator.of(context).maybePop(),
+        ),
         title: TextField(
           controller: _controller,
           autofocus: true,
@@ -64,7 +69,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             suffixIcon: _controller.text.isEmpty
                 ? null
                 : IconButton(
-                    icon: Icon(Icons.close, color: AppColors.mutedText),
+                    icon: PxIcon(Px.x, color: AppColors.mutedText, size: 18),
                     onPressed: () {
                       _controller.clear();
                       _onChanged('');

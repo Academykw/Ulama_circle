@@ -1,7 +1,7 @@
 name: ulama_circle
 description: Islamic lectures from Nigerian Sunni scholars — Yoruba, Hausa, and English.
 publish_to: 'none'
-version: 0.1.0+1
+version: 1.1.1+2
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
@@ -9,6 +9,11 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+
+  # Localization (English / Hausa / …)
+  flutter_localizations:
+    sdk: flutter
+  intl: any
 
   # State management
   flutter_riverpod: ^3.3.2
@@ -40,6 +45,12 @@ dependencies:
   carousel_slider: ^5.1.2
   cached_network_image: ^3.4.1
   share_plus: ^13.2.0
+  google_fonts: ^6.2.1        # Petrona (display) + Manrope (body)
+  device_info_plus: ^13.2.0   # detect aggressive-OEM devices (Xiaomi/Infinix…)
+  permission_handler: ^12.0.1 # check/open notification permission (media notif)
+  in_app_update: ^4.2.3       # Google Play in-app updates
+  in_app_review: ^2.0.10      # Google Play in-app review prompt
+  app_links: ^6.3.2           # deep links (shared lecture opens in-app)
 
   # Web-only admin panel: native browser file input for audio/image uploads.
   web: ^1.1.0
@@ -61,6 +72,19 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  generate: true # gen-l10n from lib/l10n/*.arb
   assets:
     - assets/images/
     - assets/icons/
+  fonts:
+    # Phosphor icon glyphs, bundled directly (see lib/core/icons/px.dart —
+    # the phosphor_flutter package doesn't compile on Flutter 3.44).
+    - family: PhosphorRegular
+      fonts:
+        - asset: assets/fonts/PhosphorRegular.ttf
+    - family: PhosphorFill
+      fonts:
+        - asset: assets/fonts/PhosphorFill.ttf
+    - family: PhosphorDuotone
+      fonts:
+        - asset: assets/fonts/PhosphorDuotone.ttf

@@ -24,7 +24,7 @@ class SheikhSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final preview = ref.watch(sheikhPreviewLecturesProvider(sheikh.id));
-    final languageFilter = ref.watch(languageFilterProvider);
+    final langFilter = ref.watch(languageFilterProvider);
 
     return preview.when(
       // Keep the layout stable while loading; hide entirely on error/empty.
@@ -42,9 +42,8 @@ class SheikhSection extends ConsumerWidget {
       data: (all) {
         // Filter by the active language; hide the whole section if this sheikh
         // has nothing in the selected language.
-        final lectures = languageFilter == null
-            ? all
-            : all.where((l) => l.language == languageFilter).toList();
+        final lectures =
+            all.where((l) => languageMatches(langFilter, l.language)).toList();
         if (lectures.isEmpty) return const SizedBox.shrink();
         return _Frame(
           sheikh: sheikh,

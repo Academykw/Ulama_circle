@@ -1,10 +1,13 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/icons/px.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/utils/play_lecture.dart';
+import '../../core/utils/share_helper.dart';
 import '../../models/lecture_model.dart';
 import '../../models/sheikh_model.dart';
 import '../../providers/content_providers.dart';
@@ -65,14 +68,24 @@ class _SheikhDetailScreenState extends ConsumerState<SheikhDetailScreen>
     }
   }
 
-  Future<void> _loadMore() async {
-    if (_loading || !_hasMore) return;
+  // Holds the currently-running page load so concurrent callers (the Albums
+  // "load all" loop, the scroll listener, the Lectures auto-load) JOIN the same
+  // fetch instead of each kicking off — or, worse, spinning in a busy-loop.
+  Future<void>? _inFlight;
+
+  Future<void> _loadMore() {
+    if (!_hasMore) return Future.value();
+    return _inFlight ??= _runLoad();
+  }
+
+  Future<void> _runLoad() async {
     setState(() => _loading = true);
     try {
       final page = await ref.read(firebaseServiceProvider).getLecturesBySheikh(
             widget.sheikh.id,
             startAfter: _cursor,
           );
+      if (!mounted) return;
       setState(() {
         _lectures.addAll(page.items);
         _cursor = page.lastDoc;
@@ -80,29 +93,51 @@ class _SheikhDetailScreenState extends ConsumerState<SheikhDetailScreen>
         _error = null;
       });
     } catch (e) {
-      setState(() => _error = e);
+      if (mounted) setState(() => _error = e);
     } finally {
+      _inFlight = null;
       if (mounted) setState(() => _loading = false);
     }
   }
 
   Future<void> _loadAll() async {
+    // Each iteration awaits a REAL fetch (start a new one or join the in-flight
+    // one), so this never spins even if another loader is running.
     while (_hasMore && mounted) {
       await _loadMore();
     }
   }
 
+  /// Standalone lectures only — anything in an album lives under the Albums
+  /// tab instead, so the two tabs don't overlap.
+  List<LectureModel> get _standalone =>
+      _lectures.where((l) => l.album.isEmpty).toList();
+
   List<LectureModel> get _filtered {
-    if (_query.isEmpty) return _lectures;
+    final base = _standalone;
+    if (_query.isEmpty) return base;
     final q = _query.toLowerCase();
-    return _lectures.where((l) => l.title.toLowerCase().contains(q)).toList();
+    return base.where((l) => l.title.toLowerCase().contains(q)).toList();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.charcoal,
-      appBar: AppBar(title: Text(widget.sheikh.name)),
+      backgroundColor: Colors.transparent,
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const PxIcon(Px.caretLeft, size: 20),
+          onPressed: () => Navigator.of(context).maybePop(),
+        ),
+        title: Text(widget.sheikh.name),
+        actions: [
+          IconButton(
+            tooltip: 'Share',
+            icon: const Icon(Icons.share_outlined, size: 22),
+            onPressed: () => shareScholar(widget.sheikh.name),
+          ),
+        ],
+      ),
       bottomNavigationBar: const SafeArea(top: false, child: MiniPlayer()),
       body: Column(
         children: [
@@ -150,6 +185,11 @@ class _SheikhDetailScreenState extends ConsumerState<SheikhDetailScreen>
     }
 
     final list = _filtered;
+    // If the loaded pages happen to be all album lectures, keep paging so any
+    // standalone lectures deeper in the catalog still surface here.
+    if (list.isEmpty && _query.isEmpty && _hasMore && !_loading) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _loadMore());
+    }
     return Column(
       children: [
         Padding(
@@ -159,30 +199,51 @@ class _SheikhDetailScreenState extends ConsumerState<SheikhDetailScreen>
             style: TextStyle(color: AppColors.cream),
             decoration: InputDecoration(
               hintText: 'Search lectures',
-              hintStyle: TextStyle(color: AppColors.mutedText),
-              prefixIcon:
-                  Icon(Icons.search, color: AppColors.mutedText, size: 20),
+              hintStyle: TextStyle(color: AppColors.faintText),
+              prefixIcon: Padding(
+                padding: const EdgeInsets.only(left: 14, right: 10),
+                child: PxIcon(Px.magnifyingGlass,
+                    color: AppColors.mutedText, size: 18),
+              ),
+              prefixIconConstraints:
+                  const BoxConstraints(minWidth: 0, minHeight: 0),
               suffixIcon: _query.isEmpty
                   ? null
                   : IconButton(
-                      icon: Icon(Icons.close,
-                          color: AppColors.mutedText, size: 18),
+                      icon: PxIcon(Px.x,
+                          color: AppColors.mutedText, size: 16),
                       onPressed: _searchCtrl.clear,
                     ),
               filled: true,
-              fillColor: AppColors.surfaceDark,
+              fillColor: AppColors.cream.withValues(alpha: 0.04),
               contentPadding: const EdgeInsets.symmetric(vertical: 0),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
-                borderSide: BorderSide.none,
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(color: AppColors.cardBorder),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(color: AppColors.cardBorder),
               ),
             ),
           ),
         ),
         Expanded(
           child: list.isEmpty
-              ? const _Message(
-                  icon: Icons.search_off, text: 'No lectures match your search.')
+              ? (_query.isNotEmpty
+                  ? const _Message(
+                      icon: Icons.search_off,
+                      text: 'No lectures match your search.')
+                  // No standalone lectures. If more pages may hold some, keep
+                  // paging; otherwise everything is in Albums.
+                  : (_hasMore
+                      ? const Center(
+                          child: CircularProgressIndicator(
+                              color: AppColors.gold, strokeWidth: 2))
+                      : const _Message(
+                          icon: Icons.album_outlined,
+                          text:
+                              'All of this scholar’s lectures are in Albums — open the Albums tab.')))
               : ListView.builder(
                   controller: _scroll,
                   padding: const EdgeInsets.only(bottom: 16),
@@ -219,6 +280,19 @@ class _SheikhDetailScreenState extends ConsumerState<SheikhDetailScreen>
       if (l.album.isEmpty) continue;
       albums.putIfAbsent(l.album, () => []).add(l);
     }
+    // Within each album, numbered lectures come first in ascending order
+    // (1,2,3… — a fixed course sequence). Un-numbered lectures, and any that
+    // share the same number, fall back to NEWEST-first — so a weekly "feed"
+    // album keeps the latest upload on top without renumbering the old ones.
+    for (final list in albums.values) {
+      list.sort((a, b) {
+        final ao = a.order == 0 ? 1 << 30 : a.order;
+        final bo = b.order == 0 ? 1 << 30 : b.order;
+        return ao != bo
+            ? ao.compareTo(bo)
+            : b.dateAdded.compareTo(a.dateAdded); // newest first
+      });
+    }
     if (albums.isEmpty) {
       return const _Message(
         icon: Icons.album_outlined,
@@ -249,7 +323,7 @@ class _SheikhHeader extends ConsumerWidget {
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
       child: Row(
         children: [
-          _Avatar(name: sheikh.name),
+          _Avatar(name: sheikh.name, photoUrl: sheikh.photoUrl),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
@@ -257,12 +331,8 @@ class _SheikhHeader extends ConsumerWidget {
               children: [
                 Text(
                   sheikh.name,
-                  style: TextStyle(
-                    color: AppColors.cream,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    height: 1.2,
-                  ),
+                  style: AppTheme.display(size: 20, weight: FontWeight.w700)
+                      .copyWith(height: 1.2),
                 ),
                 const SizedBox(height: 6),
                 Text(
@@ -271,7 +341,7 @@ class _SheikhHeader extends ConsumerWidget {
                     Formatters.titleCase(sheikh.language),
                   ].join('  ·  '),
                   style: const TextStyle(
-                      color: AppColors.gold,
+                      color: AppColors.goldMid,
                       fontSize: 13,
                       fontWeight: FontWeight.w600),
                 ),
@@ -295,8 +365,9 @@ class _SheikhHeader extends ConsumerWidget {
 }
 
 class _Avatar extends StatelessWidget {
-  const _Avatar({required this.name});
+  const _Avatar({required this.name, this.photoUrl = ''});
   final String name;
+  final String photoUrl;
 
   String get _initials {
     const titles = {'dr', 'dr.', 'sheikh', 'shaykh', 'ustadh', 'mufti', 'imam'};
@@ -310,6 +381,23 @@ class _Avatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (photoUrl.isNotEmpty) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(18),
+        child: CachedNetworkImage(
+          imageUrl: photoUrl,
+          width: 72,
+          height: 72,
+          fit: BoxFit.cover,
+          placeholder: (_, __) => _initialsBox(),
+          errorWidget: (_, __, ___) => _initialsBox(),
+        ),
+      );
+    }
+    return _initialsBox();
+  }
+
+  Widget _initialsBox() {
     return Container(
       width: 72,
       height: 72,
@@ -319,16 +407,14 @@ class _Avatar extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [AppColors.gold, AppColors.olive],
+          colors: [Color(0xFF3F6D5A), Color(0xFF123830)],
         ),
+        border: Border.all(color: AppColors.goldMid.withValues(alpha: 0.4)),
       ),
       child: Text(
         _initials,
-        style: TextStyle(
-          color: AppColors.charcoal,
-          fontSize: 24,
-          fontWeight: FontWeight.w800,
-        ),
+        style: AppTheme.display(size: 24, weight: FontWeight.w700)
+            .copyWith(color: AppColors.gold),
       ),
     );
   }
@@ -456,7 +542,7 @@ class _AlbumCard extends ConsumerWidget {
                 child: TextButton.icon(
                   onPressed: () =>
                       openLecture(context, ref, lectures.first, queue: lectures, index: 0),
-                  icon: const Icon(Icons.play_circle_fill,
+                  icon: const PxIcon(Px.playCircleFill,
                       color: AppColors.gold, size: 20),
                   label: const Text('Play all',
                       style: TextStyle(
