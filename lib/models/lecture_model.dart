@@ -10,12 +10,14 @@ class LectureModel {
   final String language; // yoruba | hausa | english
   final String category;
   final String album; // series/collection name; '' when the lecture stands alone
+  final int order; // manual sort within an album (1,2,3…); 0 = unset
   final bool isFeatured;
   final DateTime dateAdded;
   final double fileSizeMb;
   final List<String> keywords; // powers Firestore-side filtering; Algolia is the primary search path
   final int commentCount;
   final int playCount;
+  final String artworkUrl; // cover art (e.g. reciter photo); '' = branded block
 
   const LectureModel({
     required this.id,
@@ -30,9 +32,11 @@ class LectureModel {
     required this.dateAdded,
     required this.fileSizeMb,
     this.album = '',
+    this.order = 0,
     this.keywords = const [],
     this.commentCount = 0,
     this.playCount = 0,
+    this.artworkUrl = '',
   });
 
   factory LectureModel.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
@@ -47,12 +51,14 @@ class LectureModel {
       language: data['language'] as String? ?? 'english',
       category: data['category'] as String? ?? '',
       album: data['album'] as String? ?? '',
+      order: data['order'] as int? ?? 0,
       isFeatured: data['isFeatured'] as bool? ?? false,
       dateAdded: (data['dateAdded'] as Timestamp?)?.toDate() ?? DateTime.now(),
       fileSizeMb: (data['fileSizeMb'] as num?)?.toDouble() ?? 0.0,
       keywords: List<String>.from(data['keywords'] as List? ?? const []),
       commentCount: data['commentCount'] as int? ?? 0,
       playCount: data['playCount'] as int? ?? 0,
+      artworkUrl: data['artworkUrl'] as String? ?? '',
     );
   }
 
@@ -65,6 +71,7 @@ class LectureModel {
         'language': language,
         'category': category,
         'album': album,
+        'order': order,
         'isFeatured': isFeatured,
         'dateAdded': Timestamp.fromDate(dateAdded),
         'fileSizeMb': fileSizeMb,

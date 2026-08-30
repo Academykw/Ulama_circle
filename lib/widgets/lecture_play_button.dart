@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
 
+import '../core/icons/px.dart';
 import '../core/theme/app_theme.dart';
 import '../models/lecture_model.dart';
 import '../providers/download_providers.dart';
@@ -59,13 +60,13 @@ class LecturePlayButton extends ConsumerWidget {
               builder: (context, snap) {
                 final playing = snap.data?.playing ?? false;
                 return _circle(
-                  playing ? Icons.pause : Icons.play_arrow,
+                  playing ? Px.pauseFill : Px.playFill,
                   () => playing ? handler.pause() : handler.play(),
                 );
               },
             )
           else
-            _circle(Icons.play_arrow, onPlay),
+            _circle(Px.playFill, onPlay),
           if (downloaded)
             Positioned(right: 2, bottom: 2, child: _downloadedBadge()),
         ],
@@ -73,17 +74,18 @@ class LecturePlayButton extends ConsumerWidget {
     );
   }
 
-  Widget _circle(IconData icon, VoidCallback onTap) {
+  Widget _circle(PxData icon, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: size,
         height: size,
         decoration: const BoxDecoration(
-          color: AppColors.gold,
+          gradient: AppColors.goldGradient,
           shape: BoxShape.circle,
         ),
-        child: Icon(icon, color: AppColors.charcoal, size: size * 0.5),
+        child: PxIcon(icon,
+            color: const Color(0xFF0D2620), size: size * 0.42),
       ),
     );
   }
@@ -92,12 +94,14 @@ class LecturePlayButton extends ConsumerWidget {
     return Container(
       width: 17,
       height: 17,
+      alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: AppColors.olive,
+        color: AppColors.goldMid,
         shape: BoxShape.circle,
         border: Border.all(color: AppColors.charcoal, width: 2),
       ),
-      child: Icon(Icons.check, color: AppColors.cream, size: 9),
+      child: const PxIcon(Px.checkCircleFill,
+          color: Color(0xFF0D2620), size: 9),
     );
   }
 }

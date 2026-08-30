@@ -3,62 +3,83 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/icons/px.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/formatters.dart';
+import '../../l10n/app_localizations.dart';
 import '../../core/utils/play_lecture.dart';
 import '../../models/downloaded_lecture_model.dart';
 import '../../models/lecture_model.dart';
+import '../../models/reciter_model.dart';
+import '../../models/sheikh_model.dart';
+import '../../providers/content_providers.dart';
 import '../../providers/download_providers.dart';
 import '../../providers/favorites_provider.dart';
-import '../../providers/history_provider.dart';
 import '../../providers/local_db_provider.dart';
+import '../../providers/player_provider.dart';
+import '../../providers/reciter_providers.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/favorite_button.dart';
+import '../../widgets/gold_play_button.dart';
 import '../../widgets/lecture_list_tile.dart';
+import '../player/player_screen.dart';
+import '../quran/reciter_detail_screen.dart';
+import '../quran/widgets/reciter_cover.dart';
+import '../sheikh_detail/sheikh_detail_screen.dart';
 import '../playlist/playlists_view.dart';
 
-/// The Library tab: Downloads / History / Liked / Playlists. Downloads is live
-/// (backed by the download store); the others land on Days 13 & 20 and show
-/// empty states for now.
-class LibraryScreen extends StatelessWidget {
+/// The Library tab — a scrollable pill-tab hub:
+/// Scholars · Reciters · Playlists · Downloaded · Favorites.
+class LibraryScreen extends StatefulWidget {
   const LibraryScreen({super.key});
 
   @override
+  State<LibraryScreen> createState() => _LibraryScreenState();
+}
+
+class _LibraryScreenState extends State<LibraryScreen> {
+  int _tab = 0;
+
+  @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 4,
-      child: Scaffold(
-        backgroundColor: AppColors.charcoal,
-        appBar: AppBar(
-          backgroundColor: AppColors.charcoal,
-          title: const Text('Library'),
-          titleTextStyle: TextStyle(
-              color: AppColors.cream, fontSize: 22, fontWeight: FontWeight.w700),
-          bottom: TabBar(
-            // Non-scrollable → the 4 tabs share the width evenly.
-            indicatorColor: AppColors.gold,
-            indicatorSize: TabBarIndicatorSize.label,
-            indicatorWeight: 3,
-            labelColor: AppColors.gold,
-            unselectedLabelColor: AppColors.mutedText,
-            labelStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-            unselectedLabelStyle:
-                const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-            labelPadding: const EdgeInsets.symmetric(vertical: 4),
-            tabs: const [
-              Tab(text: 'Downloads'),
-              Tab(text: 'History'),
-              Tab(text: 'Liked'),
-              Tab(text: 'Playlists'),
-            ],
-          ),
-        ),
-        body: const TabBarView(
+    final l = L10n.of(context);
+    final labels = [
+      l.tabScholars,
+      l.tabReciters,
+      l.tabPlaylists,
+      l.tabDownloaded,
+      l.tabFavorites,
+    ];
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _DownloadsTab(),
-            _HistoryTab(),
-            _LikedTab(),
-            PlaylistsView(),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+              child: Text(l.library,
+                  style: AppTheme.display(size: 24, weight: FontWeight.w700)),
+            ),
+            _PillTabs(
+              labels: labels,
+              selected: _tab,
+              onSelect: (i) => setState(() => _tab = i),
+            ),
+            const SizedBox(height: 6),
+            Expanded(
+              child: IndexedStack(
+                index: _tab,
+                children: const [
+                  _ScholarsTab(),
+                  _RecitersTab(),
+                  PlaylistsView(),
+                  _DownloadedTab(),
+                  _FavoritesTab(),
+                ],
+              ),
+            ),
           ],
         ),
       ),
@@ -66,28 +87,348 @@ class LibraryScreen extends StatelessWidget {
   }
 }
 
-/// Live list of downloaded lectures with total size + delete. Reactive to the
-/// download store, so items appear/vanish as downloads complete or are removed.
-class _DownloadsTab extends ConsumerWidget {
-  const _DownloadsTab();
+/// Horizontally-scrollable gold-gradient pill tabs (Home filter styling).
+class _PillTabs extends StatelessWidget {
+  const _PillTabs(
+      {required this.labels, required this.selected, required this.onSelect});
+  final List<String> labels;
+  final int selected;
+  final ValueChanged<int> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 40,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        itemCount: labels.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (_, i) {
+          final active = i == selected;
+          return GestureDetector(
+            onTap: () => onSelect(i),
+            child: Container(
+              alignment: Alignment.center,
+              padding: const EdgeInsets.symmetric(horizontal: 18),
+              decoration: BoxDecoration(
+                gradient: active ? AppColors.goldGradient : null,
+                color: active ? null : AppColors.cream.withValues(alpha: 0.04),
+                borderRadius: BorderRadius.circular(100),
+                border: active ? null : Border.all(color: AppColors.cardBorder),
+              ),
+              child: Text(
+                labels[i],
+                style: TextStyle(
+                  color: active ? const Color(0xFF0D2620) : AppColors.cream,
+                  fontSize: 13.5,
+                  fontWeight: active ? FontWeight.w700 : FontWeight.w600,
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+// ─────────────────────────── Scholars ───────────────────────────
+
+class _ScholarsTab extends ConsumerStatefulWidget {
+  const _ScholarsTab();
+  @override
+  ConsumerState<_ScholarsTab> createState() => _ScholarsTabState();
+}
+
+class _ScholarsTabState extends ConsumerState<_ScholarsTab> {
+  String _query = '';
+
+  @override
+  Widget build(BuildContext context) {
+    final sheikhs = ref.watch(sheikhsProvider);
+    return sheikhs.when(
+      loading: () =>
+          const Center(child: CircularProgressIndicator(color: AppColors.gold)),
+      error: (_, __) => const EmptyState(
+          icon: Icons.error_outline, title: 'Couldn’t load scholars'),
+      data: (all) {
+        final q = _query.trim().toLowerCase();
+        final list = q.isEmpty
+            ? all
+            : all.where((s) => s.name.toLowerCase().contains(q)).toList();
+        return Column(
+          children: [
+            _SearchBox(
+              hint: L10n.of(context).searchScholars,
+              onChanged: (v) => setState(() => _query = v),
+            ),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
+                child: Text(L10n.of(context).scholarsCount(list.length),
+                    style: TextStyle(color: AppColors.mutedText, fontSize: 13)),
+              ),
+            ),
+            Expanded(
+              child: list.isEmpty
+                  ? const EmptyState(
+                      icon: Icons.person_search, title: 'No scholars found')
+                  : GridView.builder(
+                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        crossAxisSpacing: 16,
+                        mainAxisSpacing: 20,
+                        mainAxisExtent: 190,
+                      ),
+                      itemCount: list.length,
+                      itemBuilder: (_, i) => _ScholarTile(sheikh: list[i]),
+                    ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _ScholarTile extends StatelessWidget {
+  const _ScholarTile({required this.sheikh});
+  final SheikhModel sheikh;
+
+  String get _initials {
+    final parts = sheikh.name
+        .replaceAll(
+            RegExp(r'(Dr\.?|Prof\.?|Sheikh|Shaykh|Ustadh|Mallam)',
+                caseSensitive: false),
+            '')
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((p) => p.isNotEmpty)
+        .toList();
+    if (parts.isEmpty) return '?';
+    return parts.take(2).map((p) => p[0].toUpperCase()).join();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => SheikhDetailScreen(sheikh: sheikh)),
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: 84,
+            height: 84,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF3F6D5A), Color(0xFF123830)],
+              ),
+              image: sheikh.photoUrl.isEmpty
+                  ? null
+                  : DecorationImage(
+                      image: NetworkImage(sheikh.photoUrl), fit: BoxFit.cover),
+              border: Border.all(color: AppColors.goldMid.withValues(alpha: 0.4)),
+            ),
+            alignment: Alignment.center,
+            child: sheikh.photoUrl.isEmpty
+                ? Text(_initials,
+                    style: AppTheme.display(size: 24, weight: FontWeight.w700)
+                        .copyWith(color: AppColors.gold))
+                : null,
+          ),
+          const SizedBox(height: 10),
+          Text(sheikh.name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                  color: AppColors.cream,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700)),
+          const SizedBox(height: 6),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+            decoration: BoxDecoration(
+              color: AppColors.cream.withValues(alpha: 0.06),
+              borderRadius: BorderRadius.circular(100),
+            ),
+            child: Text(Formatters.titleCase(sheikh.language),
+                style: TextStyle(color: AppColors.cream, fontSize: 11)),
+          ),
+          const SizedBox(height: 5),
+          Text('${Formatters.compactCount(sheikh.totalViews)} views',
+              style: const TextStyle(
+                  color: AppColors.goldMid,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600)),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────── Reciters ───────────────────────────
+
+class _RecitersTab extends ConsumerStatefulWidget {
+  const _RecitersTab();
+  @override
+  ConsumerState<_RecitersTab> createState() => _RecitersTabState();
+}
+
+class _RecitersTabState extends ConsumerState<_RecitersTab> {
+  Future<void> _play(ReciterModel reciter) async {
+    final recitations =
+        await ref.read(recitationsByReciterProvider(reciter.id).future);
+    if (!mounted) return;
+    if (recitations.isEmpty) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('No recitations yet')));
+      return;
+    }
+    final lectures =
+        recitations.map((r) => r.toLecture(artwork: reciter.coverUrl)).toList();
+    ref.read(playbackControllerProvider).playQueue(lectures, 0,
+        isRecitation: true);
+    Navigator.of(context)
+        .push(MaterialPageRoute(builder: (_) => const PlayerScreen()));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final reciters = ref.watch(recitersProvider);
+    return reciters.when(
+      loading: () =>
+          const Center(child: CircularProgressIndicator(color: AppColors.gold)),
+      error: (_, __) => const EmptyState(
+          icon: Icons.error_outline, title: 'Couldn’t load reciters'),
+      data: (all) {
+        if (all.isEmpty) {
+          return EmptyState(
+              icon: Icons.person_search,
+              title: L10n.of(context).noRecitersYet);
+        }
+        return ListView.separated(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
+          itemCount: all.length + 1,
+          separatorBuilder: (_, __) => const SizedBox(height: 12),
+          itemBuilder: (_, i) {
+            if (i == 0) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 2),
+                child: Text(
+                  'Listen to beautiful recitations from talented indigenous '
+                  'Nigerian Qur’an reciters',
+                  style: TextStyle(
+                      color: AppColors.mutedText, fontSize: 13, height: 1.5),
+                ),
+              );
+            }
+            final r = all[i - 1];
+            return _ReciterTile(
+              reciter: r,
+              onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => ReciterDetailScreen(reciter: r))),
+              onPlay: () => _play(r),
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+class _ReciterTile extends StatelessWidget {
+  const _ReciterTile(
+      {required this.reciter, required this.onTap, required this.onPlay});
+  final ReciterModel reciter;
+  final VoidCallback onTap;
+  final VoidCallback onPlay;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppColors.cream.withValues(alpha: 0.04),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.cardBorder),
+        ),
+        child: Row(
+          children: [
+            ReciterCover(coverUrl: reciter.coverUrl, size: 56, radius: 14),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(reciter.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                          color: AppColors.cream,
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 9, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: AppColors.cream.withValues(alpha: 0.06),
+                          borderRadius: BorderRadius.circular(100),
+                        ),
+                        child: Text(Formatters.titleCase(reciter.language),
+                            style: TextStyle(
+                                color: AppColors.cream, fontSize: 11)),
+                      ),
+                      const SizedBox(width: 10),
+                      Text('${reciter.surahCount} Surahs',
+                          style: TextStyle(
+                              color: AppColors.faintText, fontSize: 11.5)),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 10),
+            GoldPlayButton(size: 38, onTap: onPlay),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────── Downloaded ───────────────────────────
+
+/// Live list of downloaded lectures with total size + delete.
+class _DownloadedTab extends ConsumerWidget {
+  const _DownloadedTab();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Rebuild when the download map changes.
     ref.watch(downloadControllerProvider);
     final db = ref.watch(localDbServiceProvider);
     final downloads = db.allDownloads();
 
     if (downloads.isEmpty) {
-      return const EmptyState(
+      return EmptyState(
         icon: Icons.download_outlined,
-        title: 'No downloads yet',
-        subtitle: 'Play or download a lecture to keep it offline',
+        title: L10n.of(context).noDownloads,
+        subtitle: L10n.of(context).noDownloadsSub,
       );
     }
 
-    // Read actual on-disk sizes — some records (cached during playback) stored
-    // a size of 0 due to a save-timing quirk; the files themselves are intact.
     final totalBytes =
         downloads.fold<int>(0, (sum, r) => sum + _fileSize(r.localFilePath));
     final totalMb = totalBytes / (1024 * 1024);
@@ -95,11 +436,11 @@ class _DownloadsTab extends ConsumerWidget {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 4),
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
           child: Row(
             children: [
               Text(
-                '${downloads.length} lecture${downloads.length == 1 ? '' : 's'} · ${Formatters.fileSize(totalMb)}',
+                '${downloads.length} item${downloads.length == 1 ? '' : 's'} · ${Formatters.fileSize(totalMb)} offline',
                 style: TextStyle(color: AppColors.mutedText, fontSize: 13),
               ),
               const Spacer(),
@@ -113,9 +454,10 @@ class _DownloadsTab extends ConsumerWidget {
         ),
         Expanded(
           child: ListView.builder(
+            padding: const EdgeInsets.only(bottom: 100),
             itemCount: downloads.length,
-            itemBuilder: (context, i) =>
-                _DownloadRow(record: downloads[i], ref: ref),
+            itemBuilder: (context, i) => _DownloadRow(
+                record: downloads[i], allDownloads: downloads, index: i, ref: ref),
           ),
         ),
       ],
@@ -141,8 +483,8 @@ class _DownloadsTab extends ConsumerWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text('Cancel',
-                style: TextStyle(color: AppColors.mutedText)),
+            child:
+                Text('Cancel', style: TextStyle(color: AppColors.mutedText)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
@@ -154,46 +496,53 @@ class _DownloadsTab extends ConsumerWidget {
     );
     if (ok == true) {
       await ref.read(downloadServiceProvider).deleteAll();
-      // Reset the in-memory download state map.
       ref.invalidate(downloadControllerProvider);
     }
   }
 }
 
 class _DownloadRow extends StatelessWidget {
-  const _DownloadRow({required this.record, required this.ref});
+  const _DownloadRow({
+    required this.record,
+    required this.allDownloads,
+    required this.index,
+    required this.ref,
+  });
   final DownloadedLecture record;
+  final List<DownloadedLecture> allDownloads;
+  final int index;
   final WidgetRef ref;
 
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      onTap: () => openLecture(context, ref, _asLecture(record)),
+      // Pass the whole downloads list as the queue so completing one auto-
+      // advances to the next downloaded lecture instead of just stopping.
+      onTap: () => openLecture(context, ref, _asLecture(record),
+          queue: allDownloads.map(_asLecture).toList(), index: index),
       leading: Container(
-        width: 48,
-        height: 48,
+        width: 44,
+        height: 44,
         alignment: Alignment.center,
-        padding: const EdgeInsets.all(4),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(10),
-          gradient: LinearGradient(
-            colors: [AppColors.olive, AppColors.surfaceDark],
-          ),
+          color: AppColors.goldMid.withValues(alpha: 0.14),
         ),
-        child: Icon(Icons.play_arrow, color: AppColors.cream, size: 22),
+        child: const PxIcon(Px.checkCircleFill,
+            color: AppColors.goldMid, size: 20),
       ),
       title: Text(
         record.title,
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
-        style: TextStyle(
-            color: AppColors.cream, fontSize: 14, fontWeight: FontWeight.w600),
-      ),
-      subtitle: Text(
-        '${record.sheikhName}  ·  ${Formatters.fileSize(_DownloadsTab._fileSize(record.localFilePath) / (1024 * 1024))}',
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: TextStyle(color: AppColors.mutedText, fontSize: 12),
+        style: TextStyle(
+            color: AppColors.cream, fontSize: 14, fontWeight: FontWeight.w700),
+      ),
+      subtitle: Text(
+        '${record.sheikhName}  ·  ${Formatters.fileSize(_DownloadedTab._fileSize(record.localFilePath) / (1024 * 1024))}',
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(color: AppColors.faintText, fontSize: 12),
       ),
       trailing: IconButton(
         icon: Icon(Icons.delete_outline, color: AppColors.mutedText),
@@ -204,8 +553,6 @@ class _DownloadRow extends StatelessWidget {
     );
   }
 
-  /// Minimal LectureModel from a download record — enough to play the local
-  /// file (playback resolves the local path by id; audioUrl is unused here).
   LectureModel _asLecture(DownloadedLecture r) => LectureModel(
         id: r.id,
         title: r.title,
@@ -221,107 +568,10 @@ class _DownloadRow extends StatelessWidget {
       );
 }
 
-/// Recently played, most recent first. Each row shows a resume progress bar and
-/// resumes playback on tap.
-class _HistoryTab extends ConsumerWidget {
-  const _HistoryTab();
+// ─────────────────────────── Favorites ───────────────────────────
 
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final history = ref.watch(historyProvider);
-    if (history.isEmpty) {
-      return const EmptyState(
-        icon: Icons.history,
-        title: 'No history yet',
-        subtitle: 'Lectures you play will show up here',
-      );
-    }
-
-    return Column(
-      children: [
-        Align(
-          alignment: Alignment.centerRight,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: TextButton(
-              onPressed: () async {
-                await ref.read(localDbServiceProvider).clearHistory();
-                ref.read(historyRevisionProvider.notifier).bump();
-              },
-              child: const Text('Clear',
-                  style: TextStyle(color: Colors.redAccent)),
-            ),
-          ),
-        ),
-        Expanded(
-          child: ListView.builder(
-            padding: EdgeInsets.zero,
-            itemCount: history.length,
-            itemBuilder: (context, i) {
-              final entry = history[i];
-              return ListTile(
-                onTap: () => openLecture(context, ref, entry.toLecture()),
-                leading: Container(
-                  width: 48,
-                  height: 48,
-                  alignment: Alignment.center,
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(10),
-                    gradient: LinearGradient(
-                      colors: [AppColors.olive, AppColors.surfaceDark],
-                    ),
-                  ),
-                  child: Icon(Icons.play_arrow,
-                      color: AppColors.cream, size: 22),
-                ),
-                title: Text(
-                  entry.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                      color: AppColors.cream,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600),
-                ),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      entry.isResumable
-                          ? '${entry.sheikhName}  ·  resume ${Formatters.clock(Duration(seconds: entry.positionSeconds))}'
-                          : entry.sheikhName,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                          color: AppColors.mutedText, fontSize: 12),
-                    ),
-                    if (entry.progress > 0) ...[
-                      const SizedBox(height: 6),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(2),
-                        child: LinearProgressIndicator(
-                          value: entry.progress,
-                          minHeight: 3,
-                          backgroundColor: AppColors.surfaceDark,
-                          color: AppColors.gold,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              );
-            },
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-/// Liked lectures, resolved from the user's favorites.
-class _LikedTab extends ConsumerWidget {
-  const _LikedTab();
+class _FavoritesTab extends ConsumerWidget {
+  const _FavoritesTab();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -331,18 +581,18 @@ class _LikedTab extends ConsumerWidget {
           const Center(child: CircularProgressIndicator(color: AppColors.gold)),
       error: (_, __) => const EmptyState(
         icon: Icons.error_outline,
-        title: 'Couldn’t load liked lectures',
+        title: 'Couldn’t load favorites',
       ),
       data: (lectures) {
         if (lectures.isEmpty) {
-          return const EmptyState(
+          return EmptyState(
             icon: Icons.favorite_border,
-            title: 'Nothing liked yet',
-            subtitle: 'Tap the heart on a lecture to save it here',
+            title: L10n.of(context).nothingSaved,
+            subtitle: L10n.of(context).nothingSavedSub,
           );
         }
         return ListView.builder(
-          padding: const EdgeInsets.symmetric(vertical: 12),
+          padding: const EdgeInsets.fromLTRB(0, 8, 0, 100),
           itemCount: lectures.length,
           itemBuilder: (context, i) {
             final lecture = lectures[i];
@@ -355,6 +605,45 @@ class _LikedTab extends ConsumerWidget {
           },
         );
       },
+    );
+  }
+}
+
+/// Rounded search box used by the Scholars tab.
+class _SearchBox extends StatelessWidget {
+  const _SearchBox({required this.hint, required this.onChanged});
+  final String hint;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
+      child: TextField(
+        onChanged: onChanged,
+        style: TextStyle(color: AppColors.cream),
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: TextStyle(color: AppColors.faintText),
+          prefixIcon: Padding(
+            padding: const EdgeInsets.only(left: 14, right: 10),
+            child: PxIcon(Px.magnifyingGlass,
+                color: AppColors.mutedText, size: 18),
+          ),
+          prefixIconConstraints:
+              const BoxConstraints(minWidth: 0, minHeight: 0),
+          filled: true,
+          fillColor: AppColors.cream.withValues(alpha: 0.04),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide(color: AppColors.cardBorder),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide(color: AppColors.cardBorder),
+          ),
+        ),
+      ),
     );
   }
 }

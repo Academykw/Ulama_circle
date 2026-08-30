@@ -74,6 +74,13 @@ class LocalDbService {
   Future<void> setOnboardingSeen(bool value) =>
       _meta.put(AppConstants.metaKeyOnboardingSeen, value);
 
+  /// Whether the one-time "enable background playback" OEM tip was shown.
+  bool get backgroundTipShown =>
+      _meta.get(AppConstants.metaKeyBgTipShown, defaultValue: false) as bool;
+
+  Future<void> setBackgroundTipShown(bool value) =>
+      _meta.put(AppConstants.metaKeyBgTipShown, value);
+
   /// Theme mode persisted as a string: 'system' | 'light' | 'dark'.
   String get themeMode =>
       _meta.get(AppConstants.metaKeyThemeMode, defaultValue: 'system') as String;
@@ -81,11 +88,52 @@ class LocalDbService {
   Future<void> setThemeMode(String mode) =>
       _meta.put(AppConstants.metaKeyThemeMode, mode);
 
+  /// App UI language code ('en' | 'ha' | …); '' = follow the device.
+  String get localeCode =>
+      _meta.get(AppConstants.metaKeyLocale, defaultValue: '') as String;
+
+  Future<void> setLocaleCode(String code) =>
+      _meta.put(AppConstants.metaKeyLocale, code);
+
+  /// Chosen content languages (lowercase, subset of supportedLanguages). An
+  /// empty list means "all languages".
+  List<String> get preferredLanguages =>
+      (_meta.get(AppConstants.metaKeyPreferredLanguages) as List?)
+          ?.cast<String>() ??
+      const [];
+
+  Future<void> setPreferredLanguages(List<String> langs) =>
+      _meta.put(AppConstants.metaKeyPreferredLanguages, langs);
+
+  /// Whether the first-launch language-picker step has been completed.
+  bool get languagesChosen =>
+      _meta.get(AppConstants.metaKeyLanguagesChosen, defaultValue: false)
+          as bool;
+
+  Future<void> setLanguagesChosen(bool value) =>
+      _meta.put(AppConstants.metaKeyLanguagesChosen, value);
+
   bool get isGuest =>
       _meta.get(AppConstants.metaKeyIsGuest, defaultValue: false) as bool;
 
   Future<void> setIsGuest(bool value) =>
       _meta.put(AppConstants.metaKeyIsGuest, value);
+
+  // ---- In-app review gating ----
+  // Count how many things the user has played; once they've listened a few
+  // times we ask (once) for a Play Store review at a calm moment (app open).
+
+  int get playCountTotal =>
+      _meta.get(AppConstants.metaKeyPlayCount, defaultValue: 0) as int;
+
+  Future<void> incrementPlayCount() =>
+      _meta.put(AppConstants.metaKeyPlayCount, playCountTotal + 1);
+
+  bool get reviewAsked =>
+      _meta.get(AppConstants.metaKeyReviewAsked, defaultValue: false) as bool;
+
+  Future<void> setReviewAsked(bool value) =>
+      _meta.put(AppConstants.metaKeyReviewAsked, value);
 
   // ---- Resume playback (local cache for instant offline resume) ----
   // Stored under a single map key so we don't need a new Hive box/adapter.
