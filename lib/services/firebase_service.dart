@@ -168,6 +168,23 @@ class FirebaseService {
     return results;
   }
 
+  /// Resolve several recitations by id (as playable [LectureModel]s). Used by
+  /// favorites/playlists, whose ids can point at either lectures or recitations.
+  Future<List<LectureModel>> getRecitationsByIds(List<String> ids) async {
+    if (ids.isEmpty) return [];
+    const chunkSize = 30;
+    final results = <LectureModel>[];
+    for (var i = 0; i < ids.length; i += chunkSize) {
+      final chunk = ids.sublist(
+          i, i + chunkSize > ids.length ? ids.length : i + chunkSize);
+      final snap =
+          await _recitations.where(FieldPath.documentId, whereIn: chunk).get();
+      results.addAll(
+          snap.docs.map((d) => RecitationModel.fromFirestore(d).toLecture()));
+    }
+    return results;
+  }
+
   /// Latest lectures across all sheikhs — paginated. Pass the previous page's
   /// [startAfter] cursor to load the next page.
   Future<PaginatedResult<LectureModel>> getLatestLectures({
