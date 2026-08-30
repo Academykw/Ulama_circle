@@ -19,15 +19,21 @@ final isFavoriteProvider = Provider.family<bool, String>((ref, lectureId) {
   return ref.watch(favoriteIdsProvider).contains(lectureId);
 });
 
-/// Full favorite lectures, resolved from ids — powers the Library "Liked" tab.
+/// Full favorites, resolved from ids — powers the Library "Favorites" tab. Ids
+/// can point at either a lecture OR a recitation, so we resolve from both
+/// collections and merge (each id matches only one, so no duplicates).
 final likedLecturesProvider = FutureProvider<List<LectureModel>>((ref) async {
   final ids = ref.watch(favoriteIdsProvider).toList();
   if (ids.isEmpty) return const [];
-  final lectures =
-      await ref.watch(firebaseServiceProvider).getLecturesByIds(ids);
-  // Keep newest-added-ish order stable by title as a tiebreaker.
-  lectures.sort((a, b) => a.title.compareTo(b.title));
-  return lectures;
+  final service = ref.watch(firebaseServiceProvider);
+  final resolved = await Future.wait([
+    service.getLecturesByIds(ids),
+    service.getRecitationsByIds(ids),
+  ]);
+  final all = [...resolved[0], ...resolved[1]];
+  // Keep order stable by title as a tiebreaker.
+  all.sort((a, b) => a.title.compareTo(b.title));
+  return all;
 });
 
 final favoritesControllerProvider =

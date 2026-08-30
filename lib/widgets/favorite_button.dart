@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/icons/px.dart';
 import '../core/theme/app_theme.dart';
 import '../providers/favorites_provider.dart';
 
@@ -18,8 +19,8 @@ class FavoriteButton extends ConsumerWidget {
     return IconButton(
       visualDensity: VisualDensity.compact,
       tooltip: isFav ? 'Remove from Liked' : 'Add to Liked',
-      icon: Icon(
-        isFav ? Icons.favorite : Icons.favorite_border,
+      icon: PxIcon(
+        isFav ? Px.heartFill : Px.heart,
         color: isFav ? AppColors.gold : AppColors.mutedText,
         size: size,
       ),

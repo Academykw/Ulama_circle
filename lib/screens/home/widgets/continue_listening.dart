@@ -4,7 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/utils/play_lecture.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../providers/history_provider.dart';
+import '../../../widgets/gold_play_button.dart';
 
 /// "Continue listening" card on Home — the most recent in-progress lecture with
 /// a resume button. Renders nothing when there's nothing to resume.
@@ -23,37 +25,36 @@ class ContinueListening extends ConsumerWidget {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
       child: GestureDetector(
-        onTap: () => openLecture(context, ref, entry.toLecture()),
+        onTap: () {
+          // Queue the rest of recent history (most-recent-first) starting at
+          // this entry, so finishing it advances to the next one instead of
+          // just stopping — a single-item queue has no "next" to move to.
+          final history = ref.read(historyProvider);
+          final index = history.indexWhere((h) => h.id == entry.id);
+          openLecture(
+            context,
+            ref,
+            entry.toLecture(),
+            queue: history.map((h) => h.toLecture()).toList(),
+            index: index == -1 ? 0 : index,
+          );
+        },
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                AppColors.gold.withValues(alpha: 0.22),
-                AppColors.surfaceDark,
-              ],
-            ),
-            border: Border.all(color: AppColors.gold.withValues(alpha: 0.35)),
+            borderRadius: BorderRadius.circular(18),
+            color: AppColors.goldMid.withValues(alpha: 0.08),
+            border: Border.all(color: AppColors.goldMid.withValues(alpha: 0.22)),
           ),
           child: Row(
             children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: const BoxDecoration(
-                    color: AppColors.gold, shape: BoxShape.circle),
-                child: Icon(Icons.play_arrow,
-                    color: AppColors.charcoal, size: 28),
-              ),
+              const GoldPlayButton(size: 48),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('CONTINUE LISTENING',
+                    Text(L10n.of(context).continueListening,
                         style: TextStyle(
                             color: AppColors.gold,
                             fontSize: 10,

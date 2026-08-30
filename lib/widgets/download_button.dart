@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/constants/app_constants.dart';
+import '../core/icons/px.dart';
 import '../core/theme/app_theme.dart';
 import '../models/lecture_model.dart';
+import '../providers/auth_provider.dart';
 import '../providers/download_providers.dart';
 
 /// Small stateful affordance showing a lecture's download state and letting the
@@ -22,13 +25,20 @@ class DownloadButton extends ConsumerWidget {
     final info = ref.watch(downloadInfoProvider(lecture.id));
     final controller = ref.read(downloadControllerProvider.notifier);
 
+    // Downloads become Premium-only once [downloadsRequirePremium] is flipped
+    // on; until then everyone can download.
+    final locked = AppConstants.downloadsRequirePremium &&
+        !ref.watch(isPremiumProvider);
+
     switch (info.status) {
       case DownloadStatus.notDownloaded:
         return _iconButton(
-          icon: Icons.download_outlined,
+          icon: Px.downloadSimple,
           color: AppColors.mutedText,
-          tooltip: 'Download',
-          onTap: () => controller.download(lecture),
+          tooltip: locked ? 'Download (Premium)' : 'Download',
+          onTap: () => locked
+              ? _showPremiumSheet(context)
+              : controller.download(lecture),
         );
 
       case DownloadStatus.downloading:
@@ -52,7 +62,7 @@ class DownloadButton extends ConsumerWidget {
               InkWell(
                 customBorder: const CircleBorder(),
                 onTap: () => controller.cancel(lecture.id),
-                child: Icon(Icons.close, size: 14, color: AppColors.mutedText),
+                child: PxIcon(Px.x, size: 14, color: AppColors.mutedText),
               ),
             ],
           ),
@@ -60,33 +70,117 @@ class DownloadButton extends ConsumerWidget {
 
       case DownloadStatus.downloaded:
         return _iconButton(
-          icon: Icons.download_done,
-          color: AppColors.olive,
+          icon: Px.checkCircleFill,
+          color: AppColors.goldMid,
           tooltip: 'Downloaded — tap to remove',
           onTap: () => _confirmDelete(context, controller),
         );
 
       case DownloadStatus.failed:
-        return _iconButton(
-          icon: Icons.error_outline,
-          color: Colors.redAccent,
+        return IconButton(
+          icon: const Icon(Icons.error_outline, color: Colors.redAccent, size: 22),
           tooltip: 'Download failed — tap to retry',
-          onTap: () => controller.download(lecture),
+          visualDensity: VisualDensity.compact,
+          onPressed: () => controller.download(lecture),
         );
     }
   }
 
   Widget _iconButton({
-    required IconData icon,
+    required PxData icon,
     required Color color,
     required String tooltip,
     required VoidCallback onTap,
   }) {
     return IconButton(
-      icon: Icon(icon, color: color, size: 22),
+      icon: PxIcon(icon, color: color, size: 22),
       tooltip: tooltip,
       visualDensity: VisualDensity.compact,
       onPressed: onTap,
+    );
+  }
+
+  void _showPremiumSheet(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: AppColors.surfaceDark,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 18, 24, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 20),
+                  decoration: BoxDecoration(
+                    color: AppColors.mutedText.withValues(alpha: 0.4),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      gradient: AppColors.goldGradient,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const PxIcon(Px.downloadSimple,
+                        color: Color(0xFF0D2620), size: 22),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Text('Downloads are Premium',
+                        style: AppTheme.display(
+                            size: 20, weight: FontWeight.w700)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Text(
+                'Save lectures and recitations to listen offline — on the bus, '
+                'in areas with no data, anywhere. Upgrade to Premium to unlock '
+                'downloads.',
+                style: TextStyle(
+                    color: AppColors.mutedText, fontSize: 14, height: 1.5),
+              ),
+              const SizedBox(height: 22),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.gold,
+                    foregroundColor: const Color(0xFF0D2620),
+                    padding: const EdgeInsets.symmetric(vertical: 15),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
+                  ),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    ScaffoldMessenger.of(context)
+                      ..hideCurrentSnackBar()
+                      ..showSnackBar(const SnackBar(
+                          content: Text('Premium is coming soon, inshaAllah.')));
+                  },
+                  child: const Text('Notify me',
+                      style: TextStyle(
+                          fontWeight: FontWeight.w700, fontSize: 15)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
