@@ -1,0 +1,16 @@
+rules_version = '2';
+
+// Ulama Circle Storage: lecture/reciter audio + scholar images.
+// Public read (the mobile app streams audio); writes only by admins — the same
+// admins/{uid} marker the Firestore rules use.
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /{allPaths=**} {
+      allow read: if true;
+      // Admins carry a custom `admin: true` auth claim (set via
+      // tools/seed/set_admin_claims.js). More reliable than cross-reading
+      // Firestore from Storage rules.
+      allow write: if request.auth != null && request.auth.token.admin == true;
+    }
+  }
+}
