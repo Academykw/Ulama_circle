@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../l10n/app_localizations.dart';
 import '../../providers/content_providers.dart';
 import 'widgets/banner_carousel.dart';
 import 'widgets/browse_grid.dart';
@@ -23,7 +24,7 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      backgroundColor: AppColors.charcoal,
+      backgroundColor: Colors.transparent,
       body: SafeArea(
         child: RefreshIndicator(
           color: AppColors.gold,
@@ -83,11 +84,7 @@ class SectionHeader extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: TextStyle(
-                    color: AppColors.cream,
-                    fontSize: 19,
-                    fontWeight: FontWeight.w700,
-                  ),
+                  style: AppTheme.display(size: 19, weight: FontWeight.w700),
                 ),
                 if (subtitle != null) ...[
                   const SizedBox(height: 2),
@@ -107,13 +104,14 @@ class SectionHeader extends StatelessWidget {
                 foregroundColor: AppColors.gold,
                 padding: const EdgeInsets.symmetric(horizontal: 8),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text('See All',
-                      style: TextStyle(
+                  Text(L10n.of(context).seeAll,
+                      style: const TextStyle(
                           color: AppColors.gold, fontWeight: FontWeight.w600)),
-                  Icon(Icons.chevron_right, color: AppColors.gold, size: 20),
+                  const Icon(Icons.chevron_right,
+                      color: AppColors.gold, size: 20),
                 ],
               ),
             ),

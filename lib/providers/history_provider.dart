@@ -25,7 +25,7 @@ final historyProvider = Provider<List<HistoryEntry>>((ref) {
 final continueListeningProvider = Provider<HistoryEntry?>((ref) {
   final history = ref.watch(historyProvider);
   for (final entry in history) {
-    if (entry.isResumable) return entry;
+    if (entry.isContinuable) return entry;
   }
   return null;
 });

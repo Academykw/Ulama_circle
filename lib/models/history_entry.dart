@@ -11,6 +11,7 @@ class HistoryEntry {
   final String audioUrl;
   final String language;
   final String category;
+  final String artworkUrl; // reciter cover / lecturer photo, for resume art
   final int positionSeconds;
   final int durationSeconds;
   final int lastPlayedEpoch;
@@ -26,6 +27,7 @@ class HistoryEntry {
     required this.positionSeconds,
     required this.durationSeconds,
     required this.lastPlayedEpoch,
+    this.artworkUrl = '',
   });
 
   double get progress => durationSeconds > 0
@@ -33,9 +35,17 @@ class HistoryEntry {
       : 0.0;
 
   /// True when there's a meaningful resume point (started, not basically done).
+  /// Used to decide whether to seek back into a track on replay.
   bool get isResumable =>
       positionSeconds > 5 &&
       (durationSeconds == 0 || durationSeconds - positionSeconds > 10);
+
+  /// True when this belongs in "Continue listening": recently played and not
+  /// essentially finished. Unlike [isResumable] this includes a just-started
+  /// track (position 0), so the card reflects what you played immediately —
+  /// even if you only played it for a second before closing.
+  bool get isContinuable =>
+      durationSeconds == 0 || durationSeconds - positionSeconds > 10;
 
   DateTime get lastPlayed =>
       DateTime.fromMillisecondsSinceEpoch(lastPlayedEpoch);
@@ -49,6 +59,7 @@ class HistoryEntry {
       audioUrl: audioUrl,
       language: language,
       category: category,
+      artworkUrl: artworkUrl,
       positionSeconds: positionSeconds ?? this.positionSeconds,
       durationSeconds: durationSeconds ?? this.durationSeconds,
       lastPlayedEpoch: lastPlayedEpoch ?? this.lastPlayedEpoch,
@@ -63,6 +74,7 @@ class HistoryEntry {
         'audioUrl': audioUrl,
         'language': language,
         'category': category,
+        'artwork': artworkUrl,
         'position': positionSeconds,
         'duration': durationSeconds,
         'lastPlayed': lastPlayedEpoch,
@@ -76,6 +88,7 @@ class HistoryEntry {
         audioUrl: map['audioUrl'] as String? ?? '',
         language: map['language'] as String? ?? '',
         category: map['category'] as String? ?? '',
+        artworkUrl: map['artwork'] as String? ?? '',
         positionSeconds: (map['position'] as num?)?.toInt() ?? 0,
         durationSeconds: (map['duration'] as num?)?.toInt() ?? 0,
         lastPlayedEpoch: (map['lastPlayed'] as num?)?.toInt() ?? 0,
@@ -95,5 +108,6 @@ class HistoryEntry {
         isFeatured: false,
         dateAdded: DateTime.now(),
         fileSizeMb: 0,
+        artworkUrl: artworkUrl,
       );
 }
