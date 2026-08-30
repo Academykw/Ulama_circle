@@ -62,38 +62,59 @@ class PlayerQueueState {
 
   /// Builds a fresh state for a new queue starting at [startIndex], honoring the
   /// current shuffle setting.
+  ///
+  /// Sequential play keeps the natural order [0,1,2,…] and simply starts at
+  /// [startIndex], so completing one track advances to the NEXT real index
+  /// (5 → 6 → 7…). Only shuffle reorders — the tapped track first, the rest
+  /// shuffled after it.
   static PlayerQueueState forQueue(
     List<LectureModel> lectures,
     int startIndex, {
     required RepeatMode repeatMode,
     required bool shuffle,
   }) {
-    final order = _buildOrder(lectures.length, startIndex, shuffle);
+    final n = lectures.length;
+    final safeStart = n == 0 ? 0 : startIndex.clamp(0, n - 1);
+    final List<int> order;
+    final int orderPos;
+    if (shuffle) {
+      order = _shuffledOrder(n, safeStart);
+      orderPos = 0; // tapped track sits first
+    } else {
+      order = [for (var i = 0; i < n; i++) i];
+      orderPos = safeStart; // walk forward from here
+    }
     return PlayerQueueState(
       queue: lectures,
       order: order,
-      orderPos: 0,
+      orderPos: orderPos,
       repeatMode: repeatMode,
       shuffle: shuffle,
     );
   }
 
-  /// Order that always starts with [startIndex]; the rest is sequential or
-  /// shuffled.
-  static List<int> _buildOrder(int length, int startIndex, bool shuffle) {
+  /// Shuffle order: [startIndex] first, the remaining indices shuffled after it.
+  static List<int> _shuffledOrder(int length, int startIndex) {
     final rest = [
       for (var i = 0; i < length; i++)
         if (i != startIndex) i
-    ];
-    if (shuffle) rest.shuffle(Random());
+    ]..shuffle(Random());
     return [if (length > 0) startIndex, ...rest];
   }
 
   /// Re-derives the play order when shuffle is toggled, keeping the current
-  /// lecture playing (moved to the front of the new order).
+  /// lecture playing. Turning shuffle OFF restores natural order and continues
+  /// forward from the current track; turning it ON puts current first.
   PlayerQueueState withShuffle(bool value) {
     final cur = currentIndex ?? 0;
-    final order = _buildOrder(queue.length, cur, value);
-    return copyWith(order: order, orderPos: 0, shuffle: value);
+    if (value) {
+      return copyWith(
+          order: _shuffledOrder(queue.length, cur), orderPos: 0, shuffle: true);
+    }
+    return copyWith(
+      order: [for (var i = 0; i < queue.length; i++) i],
+      orderPos: cur,
+      shuffle: false,
+    );
   }
 }

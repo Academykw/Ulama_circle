@@ -18,3 +18,18 @@ class OnboardingNotifier extends Notifier<bool> {
     state = true;
   }
 }
+
+/// Whether the first-launch "choose your content languages" step is done. The
+/// root router shows the picker once, right after onboarding, until this flips.
+final languagesChosenProvider =
+    NotifierProvider<LanguagesChosenNotifier, bool>(LanguagesChosenNotifier.new);
+
+class LanguagesChosenNotifier extends Notifier<bool> {
+  @override
+  bool build() => ref.watch(localDbServiceProvider).languagesChosen;
+
+  Future<void> complete() async {
+    await ref.read(localDbServiceProvider).setLanguagesChosen(true);
+    state = true;
+  }
+}

@@ -35,8 +35,13 @@ final playlistLecturesProvider =
     FutureProvider.family<List<LectureModel>, String>((ref, idsKey) async {
   final ids = idsKey.isEmpty ? const <String>[] : idsKey.split(',');
   if (ids.isEmpty) return const [];
-  final lectures = await ref.watch(firebaseServiceProvider).getLecturesByIds(ids);
-  final byId = {for (final l in lectures) l.id: l};
+  // Ids can be lectures or recitations — resolve from both, keep playlist order.
+  final service = ref.watch(firebaseServiceProvider);
+  final resolved = await Future.wait([
+    service.getLecturesByIds(ids),
+    service.getRecitationsByIds(ids),
+  ]);
+  final byId = {for (final l in [...resolved[0], ...resolved[1]]) l.id: l};
   return [
     for (final id in ids)
       if (byId[id] != null) byId[id]!,

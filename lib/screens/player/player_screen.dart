@@ -3,10 +3,14 @@ import 'package:flutter/material.dart' hide RepeatMode;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
 
+import '../../core/icons/px.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/formatters.dart';
+import '../../l10n/app_localizations.dart';
 import '../../models/lecture_model.dart';
+import '../../core/utils/share_helper.dart';
 import '../../models/player_queue.dart';
+import '../../providers/content_providers.dart';
 import '../../providers/player_provider.dart';
 import '../../widgets/add_to_playlist_sheet.dart';
 import '../../widgets/download_button.dart';
@@ -22,19 +26,27 @@ class PlayerScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final lecture = ref.watch(currentLectureProvider);
 
-    return Scaffold(
-      backgroundColor: AppColors.charcoal,
-      appBar: AppBar(
+    return Container(
+      decoration: AppTheme.nowPlayingBackdrop,
+      child: Scaffold(
         backgroundColor: Colors.transparent,
-        title: const Text('Now Playing'),
-        centerTitle: true,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          leading: IconButton(
+            icon: const PxIcon(Px.caretLeft, size: 20),
+            onPressed: () => Navigator.of(context).maybePop(),
+          ),
+          title: Text(L10n.of(context).nowPlaying),
+          titleTextStyle: AppTheme.display(size: 16, weight: FontWeight.w700),
+          centerTitle: true,
+        ),
+        body: lecture == null
+            ? Center(
+                child: Text(L10n.of(context).nothingPlaying,
+                    style: TextStyle(color: AppColors.mutedText)),
+              )
+            : _PlayerBody(lecture: lecture),
       ),
-      body: lecture == null
-          ? Center(
-              child: Text('Nothing playing',
-                  style: TextStyle(color: AppColors.mutedText)),
-            )
-          : _PlayerBody(lecture: lecture),
     );
   }
 }
@@ -53,33 +65,13 @@ class _PlayerBody extends ConsumerWidget {
         child: Column(
           children: [
             const Spacer(),
-            // Artwork stand-in — branded block with the sheikh name.
+            // Cover art when available (e.g. reciter photo), else a branded
+            // block with the sheikh/reciter name.
             AspectRatio(
               aspectRatio: 1,
-              child: Container(
+              child: ConstrainedBox(
                 constraints: const BoxConstraints(maxHeight: 300),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(24),
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [AppColors.olive, AppColors.surfaceDark],
-                  ),
-                ),
-                child: Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Text(
-                      lecture.sheikhName,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: AppColors.cream,
-                        fontSize: 22,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ),
+                child: _Artwork(lecture: lecture),
               ),
             ),
             const SizedBox(height: 28),
@@ -94,15 +86,12 @@ class _PlayerBody extends ConsumerWidget {
                         lecture.title,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: AppColors.cream,
-                          fontSize: 19,
-                          fontWeight: FontWeight.w700,
-                        ),
+                        style: AppTheme.display(size: 20, weight: FontWeight.w700)
+                            .copyWith(height: 1.25),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 6),
                       Text(
-                        '${lecture.sheikhName}  •  ${Formatters.titleCase(lecture.language)}',
+                        '${lecture.sheikhName}  ·  ${Formatters.titleCase(lecture.language)}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
@@ -114,9 +103,15 @@ class _PlayerBody extends ConsumerWidget {
                 FavoriteButton(lectureId: lecture.id, size: 26),
                 IconButton(
                   tooltip: 'Add to playlist',
-                  icon: Icon(Icons.playlist_add,
-                      color: AppColors.mutedText, size: 26),
+                  icon: PxIcon(Px.playlist,
+                      color: AppColors.mutedText, size: 24),
                   onPressed: () => showAddToPlaylistSheet(context, lecture.id),
+                ),
+                IconButton(
+                  tooltip: 'Share',
+                  icon: Icon(Icons.share_outlined,
+                      color: AppColors.mutedText, size: 22),
+                  onPressed: () => shareLecture(lecture),
                 ),
                 DownloadButton(lecture: lecture),
               ],
@@ -129,6 +124,69 @@ class _PlayerBody extends ConsumerWidget {
             const _SecondaryControls(),
             const Spacer(),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The Now Playing cover: the artwork image when set (reciter photo), or the
+/// lecturer's photo resolved by sheikhId, otherwise a branded gradient block
+/// with the sheikh/reciter name.
+class _Artwork extends ConsumerWidget {
+  const _Artwork({required this.lecture});
+  final LectureModel lecture;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final branded = _BrandedCover(name: lecture.sheikhName);
+    // Recitations carry the reciter cover in artworkUrl; lectures don't, so fall
+    // back to the sheikh's photo (looked up by id) when one exists.
+    var art = lecture.artworkUrl;
+    if (art.isEmpty && lecture.sheikhId.isNotEmpty) {
+      art = ref.watch(sheikhByIdProvider(lecture.sheikhId))?.photoUrl ?? '';
+    }
+    if (art.isEmpty) return branded;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(24),
+      child: Image.network(
+        art,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+        // Show the branded block while loading and if the image fails.
+        loadingBuilder: (context, child, progress) =>
+            progress == null ? child : branded,
+        errorBuilder: (_, __, ___) => branded,
+      ),
+    );
+  }
+}
+
+class _BrandedCover extends StatelessWidget {
+  const _BrandedCover({required this.name});
+  final String name;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF2A4C3F), Color(0xFF0D2620)],
+        ),
+        border: Border.all(color: AppColors.cardBorder),
+      ),
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Text(
+            name,
+            textAlign: TextAlign.center,
+            style: AppTheme.display(size: 24, weight: FontWeight.w700),
+          ),
         ),
       ),
     );
@@ -166,9 +224,9 @@ class _ScrubberState extends State<_Scrubber> {
               children: [
                 SliderTheme(
                   data: SliderTheme.of(context).copyWith(
-                    trackHeight: 3,
-                    activeTrackColor: AppColors.gold,
-                    inactiveTrackColor: AppColors.surfaceDark,
+                    trackHeight: 4,
+                    activeTrackColor: AppColors.goldMid,
+                    inactiveTrackColor: AppColors.cream.withValues(alpha: 0.12),
                     thumbColor: AppColors.gold,
                     overlayColor: AppColors.gold.withValues(alpha: 0.2),
                     thumbShape:
@@ -218,73 +276,85 @@ class _Controls extends ConsumerWidget {
     final queue = ref.watch(playerQueueProvider);
     final controller = ref.read(playbackControllerProvider);
 
-    final repeatIcon =
-        queue.repeatMode == RepeatMode.one ? Icons.repeat_one : Icons.repeat;
     final repeatColor =
         queue.repeatMode == RepeatMode.off ? AppColors.mutedText : AppColors.gold;
 
-    return StreamBuilder<PlayerState>(
+    return ValueListenableBuilder<bool>(
+      valueListenable: controller.hasErrorNotifier,
+      builder: (context, hasError, __) => StreamBuilder<PlayerState>(
       stream: handler.playerStateStream,
       builder: (context, snapshot) {
         final playerState = snapshot.data;
         final processing = playerState?.processingState;
         final playing = playerState?.playing ?? false;
-        final isBusy = processing == ProcessingState.loading ||
-            processing == ProcessingState.buffering;
+        // Don't show the "busy" spinner when we're actually in an error state
+        // waiting for a retry — show the retry button instead.
+        final isBusy = !hasError &&
+            (processing == ProcessingState.loading ||
+                processing == ProcessingState.buffering);
 
         return Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
             IconButton(
-              iconSize: 24,
               color: queue.shuffle ? AppColors.gold : AppColors.mutedText,
-              icon: const Icon(Icons.shuffle),
+              icon: const PxIcon(Px.shuffle, size: 22),
               tooltip: 'Shuffle',
               onPressed: controller.toggleShuffle,
             ),
             IconButton(
-              iconSize: 34,
               color: AppColors.cream,
-              icon: const Icon(Icons.skip_previous),
+              icon: const PxIcon(Px.skipBack, size: 28),
               onPressed: controller.previous,
             ),
             Container(
-              width: 72,
-              height: 72,
-              decoration: const BoxDecoration(
-                color: AppColors.gold,
+              width: 68,
+              height: 68,
+              decoration: BoxDecoration(
+                gradient: AppColors.goldGradient,
                 shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.gold.withValues(alpha: 0.35),
+                    blurRadius: 20,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
               ),
               child: isBusy
-                  ? Padding(
-                      padding: const EdgeInsets.all(20),
+                  ? const Padding(
+                      padding: EdgeInsets.all(20),
                       child: CircularProgressIndicator(
-                          color: AppColors.charcoal, strokeWidth: 3),
+                          color: Color(0xFF0D2620), strokeWidth: 3),
                     )
                   : IconButton(
-                      iconSize: 40,
-                      color: AppColors.charcoal,
-                      icon: Icon(playing ? Icons.pause : Icons.play_arrow),
-                      onPressed: () =>
-                          playing ? handler.pause() : handler.play(),
+                      color: const Color(0xFF0D2620),
+                      icon: PxIcon(
+                          hasError
+                              ? Px.arrowClockwise
+                              : (playing ? Px.pauseFill : Px.playFill),
+                          size: 26),
+                      tooltip: hasError ? 'Retry' : null,
+                      onPressed: () => hasError
+                          ? controller.retry()
+                          : (playing ? handler.pause() : controller.play()),
                     ),
             ),
             IconButton(
-              iconSize: 34,
               color: queue.hasNext ? AppColors.cream : AppColors.mutedText,
-              icon: const Icon(Icons.skip_next),
+              icon: const PxIcon(Px.skipForward, size: 28),
               onPressed: queue.hasNext ? controller.next : null,
             ),
             IconButton(
-              iconSize: 24,
               color: repeatColor,
-              icon: Icon(repeatIcon),
+              icon: const PxIcon(Px.repeat, size: 22),
               tooltip: 'Repeat',
               onPressed: controller.cycleRepeat,
             ),
           ],
         );
       },
+    ),
     );
   }
 }
@@ -304,33 +374,59 @@ class _SecondaryControls extends ConsumerWidget {
       handler.seek(target);
     }
 
+    final queueColor =
+        queue.queue.length > 1 ? AppColors.cream : AppColors.mutedText;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        IconButton(
-          iconSize: 28,
-          color: AppColors.cream,
-          icon: const Icon(Icons.replay_10),
-          onPressed: () => seekRelative(const Duration(seconds: -10)),
+        _SeekButton(
+          icon: Px.arrowCounterClockwise,
+          label: '10',
+          onTap: () => seekRelative(const Duration(seconds: -10)),
         ),
         IconButton(
-          iconSize: 26,
-          color: queue.queue.length > 1
-              ? AppColors.cream
-              : AppColors.mutedText,
-          icon: const Icon(Icons.queue_music),
+          iconSize: 24,
+          color: queueColor,
+          icon: const PxIcon(Px.queue, size: 22),
           tooltip: 'Queue',
-          onPressed: queue.queue.length > 1
-              ? () => showQueueSheet(context)
-              : null,
+          onPressed:
+              queue.queue.length > 1 ? () => showQueueSheet(context) : null,
         ),
-        IconButton(
-          iconSize: 28,
-          color: AppColors.cream,
-          icon: const Icon(Icons.forward_30),
-          onPressed: () => seekRelative(const Duration(seconds: 30)),
+        _SeekButton(
+          icon: Px.arrowClockwise,
+          label: '30',
+          onTap: () => seekRelative(const Duration(seconds: 30)),
         ),
       ],
+    );
+  }
+}
+
+/// A relative-seek control: Phosphor arrow with its seconds label underneath.
+class _SeekButton extends StatelessWidget {
+  const _SeekButton(
+      {required this.icon, required this.label, required this.onTap});
+  final PxData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(30),
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            PxIcon(icon, color: AppColors.cream, size: 22),
+            const SizedBox(height: 2),
+            Text(label,
+                style: TextStyle(color: AppColors.mutedText, fontSize: 10)),
+          ],
+        ),
+      ),
     );
   }
 }

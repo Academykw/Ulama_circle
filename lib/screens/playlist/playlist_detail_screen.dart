@@ -23,7 +23,7 @@ class PlaylistDetailScreen extends ConsumerWidget {
     // Playlist was deleted (or not found) — pop back.
     if (playlist == null) {
       return Scaffold(
-        backgroundColor: AppColors.charcoal,
+        backgroundColor: Colors.transparent,
         appBar: AppBar(),
         body: const EmptyState(
             icon: Icons.queue_music, title: 'Playlist not found'),
@@ -33,7 +33,7 @@ class PlaylistDetailScreen extends ConsumerWidget {
     final lectures = ref.watch(playlistLecturesProvider(playlist.idsKey));
 
     return Scaffold(
-      backgroundColor: AppColors.charcoal,
+      backgroundColor: Colors.transparent,
       bottomNavigationBar: const SafeArea(top: false, child: MiniPlayer()),
       appBar: AppBar(
         title: Text(playlist.name),
