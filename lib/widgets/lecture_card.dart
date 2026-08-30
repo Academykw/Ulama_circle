@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../core/theme/app_theme.dart';
 import '../core/utils/formatters.dart';
 import '../models/lecture_model.dart';
+import 'gold_play_button.dart';
+import 'lecture_cover.dart';
 
 /// Compact fixed-width lecture card for horizontal rows (home sheikh sections).
 /// Lectures have no artwork, so the "cover" is a branded gradient block with the
@@ -30,23 +32,16 @@ class LectureCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Cover block
+            // Cover: the lecturer's photo (falls back to a branded name block),
+            // with the category label and a play button laid over it.
             AspectRatio(
               aspectRatio: 1.35,
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(14),
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      accent.withValues(alpha: 0.35),
-                      AppColors.surfaceDark,
-                    ],
-                  ),
-                  border: Border.all(color: accent.withValues(alpha: 0.30)),
-                ),
-                child: Stack(
+              child: LectureCover(
+                lecture: lecture,
+                accent: accent,
+                radius: 14,
+                brandedTextSize: 13,
+                overlay: Stack(
                   children: [
                     Positioned(
                       left: 12,
@@ -60,39 +55,10 @@ class LectureCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                    // Sheikh name centered as the "cover" text, matching the
-                    // list-tile block. Padded so it never collides with the
-                    // category label or the play button.
-                    Positioned.fill(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(12, 32, 12, 32),
-                        child: Center(
-                          child: Text(
-                            lecture.sheikhName,
-                            textAlign: TextAlign.center,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: AppColors.cream,
-                              fontSize: 13,
-                              height: 1.2,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    Positioned(
+                    const Positioned(
                       right: 10,
                       bottom: 10,
-                      child: Container(
-                        width: 34,
-                        height: 34,
-                        decoration:
-                            BoxDecoration(color: accent, shape: BoxShape.circle),
-                        child: Icon(Icons.play_arrow,
-                            color: AppColors.charcoal, size: 20),
-                      ),
+                      child: GoldPlayButton(size: 34),
                     ),
                   ],
                 ),

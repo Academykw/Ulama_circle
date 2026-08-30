@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../core/theme/app_theme.dart';
 import '../core/utils/formatters.dart';
 import '../models/lecture_model.dart';
+import 'lecture_cover.dart';
 
 /// Full-width lecture row for vertical lists (sheikh detail, category, search,
 /// favorites, playlists). Shows a branded leading block, title, sheikh, and
@@ -33,37 +34,15 @@ class LectureListTile extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
         child: Row(
           children: [
-            // Cover stand-in: the sheikh's name set inside the gradient block,
-            // small enough to wrap to a couple of lines. Keeps the same accent
-            // colors we used as the empty placeholder.
-            Container(
+            // Cover: the lecturer's photo, falling back to a branded name block.
+            SizedBox(
               width: 64,
               height: 64,
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    accent.withValues(alpha: 0.40),
-                    AppColors.surfaceDark,
-                  ],
-                ),
-                border: Border.all(color: accent.withValues(alpha: 0.30)),
-              ),
-              child: Text(
-                lecture.sheikhName,
-                textAlign: TextAlign.center,
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: AppColors.cream,
-                  fontSize: 9.5,
-                  height: 1.15,
-                  fontWeight: FontWeight.w600,
-                ),
+              child: LectureCover(
+                lecture: lecture,
+                accent: accent,
+                radius: 12,
+                brandedTextSize: 9.5,
               ),
             ),
             const SizedBox(width: 12),

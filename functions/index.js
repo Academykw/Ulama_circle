@@ -10,7 +10,10 @@
  */
 
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
-const { onDocumentWritten } = require("firebase-functions/v2/firestore");
+const {
+  onDocumentWritten,
+  onDocumentCreated,
+} = require("firebase-functions/v2/firestore");
 const admin = require("firebase-admin");
 
 admin.initializeApp();
@@ -36,7 +39,26 @@ async function bumpDaily(field) {
   );
 }
 
-exports.sendTopicNotification = onCall(async (req) => {
+// Per-lecture daily rollup — powers "top lectures this week / today". One tiny
+// doc per lecture per day; the admin sums the last N days client-side.
+async function bumpLectureDaily(lectureId, title, sheikhName) {
+  const key = new Date().toISOString().slice(0, 10);
+  await db
+    .collection("lecture_stats_daily")
+    .doc(`${key}__${lectureId}`)
+    .set(
+      {
+        date: key,
+        lectureId,
+        title: title || "",
+        sheikhName: sheikhName || "",
+        plays: inc(1),
+      },
+      { merge: true },
+    );
+}
+
+exports.sendTopicNotification = onCall({ invoker: "public" }, async (req) => {
   await assertAdmin(req.auth);
   const { topic, title, body, type } = req.data || {};
   if (!topic || !title) {
@@ -51,7 +73,7 @@ exports.sendTopicNotification = onCall(async (req) => {
   return { messageId };
 });
 
-exports.incrementPlayCount = onCall(async (req) => {
+exports.incrementPlayCount = onCall({ invoker: "public" }, async (req) => {
   if (!req.auth) {
     throw new HttpsError("unauthenticated", "Sign in required.");
   }
@@ -68,10 +90,11 @@ exports.incrementPlayCount = onCall(async (req) => {
     await db.collection("sheikhs").doc(sheikhId).set({ totalViews: inc(1) }, { merge: true });
   }
   await bumpDaily("plays");
+  await bumpLectureDaily(lectureId, snap.get("title"), snap.get("sheikhName"));
   return { ok: true };
 });
 
-exports.incrementRecitationListen = onCall(async (req) => {
+exports.incrementRecitationListen = onCall({ invoker: "public" }, async (req) => {
   if (!req.auth) {
     throw new HttpsError("unauthenticated", "Sign in required.");
   }
@@ -105,6 +128,16 @@ exports.onLectureWritten = onDocumentWritten("lectures/{id}", async (event) => {
       { merge: true },
     );
   }
+});
+
+// Count new users per day for the growth chart (guests included; registered
+// users tracked separately in newRegistered).
+exports.onUserCreated = onDocumentCreated("users/{uid}", async (event) => {
+  const data = event.data ? event.data.data() : null;
+  const key = new Date().toISOString().slice(0, 10);
+  const fields = { date: key, newUsers: inc(1) };
+  if (data && data.isGuest === false) fields.newRegistered = inc(1);
+  await db.collection("stats_daily").doc(key).set(fields, { merge: true });
 });
 
 // Keep the reciter's surah count in sync.
