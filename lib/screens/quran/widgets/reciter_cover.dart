@@ -31,7 +31,9 @@ class ReciterCover extends StatelessWidget {
         image: coverUrl.isEmpty
             ? null
             : DecorationImage(
-                image: NetworkImage(coverUrl), fit: BoxFit.cover),
+                image: NetworkImage(coverUrl),
+                fit: BoxFit.cover,
+                onError: (_, __) {}),
       ),
       alignment: Alignment.center,
       child: coverUrl.isEmpty

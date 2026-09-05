@@ -147,7 +147,8 @@ class _Row extends StatelessWidget {
                         ? null
                         : DecorationImage(
                             image: NetworkImage(reciter.coverUrl),
-                            fit: BoxFit.cover),
+                            fit: BoxFit.cover,
+                            onError: (_, __) {}),
                   ),
                   child: reciter.coverUrl.isEmpty
                       ? const Icon(Icons.menu_book,

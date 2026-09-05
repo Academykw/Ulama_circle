@@ -1,7 +1,7 @@
 name: ulama_circle
 description: Islamic lectures from Nigerian Sunni scholars — Yoruba, Hausa, and English.
 publish_to: 'none'
-version: 1.1.1+2
+version: 1.2.0+3
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
@@ -76,6 +76,7 @@ flutter:
   assets:
     - assets/images/
     - assets/icons/
+    - shorebird.yaml
   fonts:
     # Phosphor icon glyphs, bundled directly (see lib/core/icons/px.dart —
     # the phosphor_flutter package doesn't compile on Flutter 3.44).

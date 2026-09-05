@@ -263,6 +263,11 @@ class _ScholarCard extends StatelessWidget {
                   : DecorationImage(
                       image: NetworkImage(sheikh.photoUrl),
                       fit: BoxFit.cover,
+                      // A failed load (no network/bad URL) just leaves the
+                      // gradient behind it showing — no visual change, but
+                      // silences the Flutter image-error report at the source
+                      // instead of relying on it being caught downstream.
+                      onError: (_, __) {},
                     ),
               border:
                   Border.all(color: AppColors.goldMid.withValues(alpha: 0.4)),

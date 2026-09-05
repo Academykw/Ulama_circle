@@ -30,8 +30,11 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   void dispose() {
     _debounce?.cancel();
     _controller.dispose();
-    // Reset the query so a fresh search starts clean next time.
-    Future.microtask(() => ref.read(searchQueryProvider.notifier).set(''));
+    // Reset the query so a fresh search starts clean next time. Must run
+    // synchronously, right here — `ref` becomes unusable the moment this
+    // widget finishes disposing, so deferring this to a microtask (as
+    // before) threw "Bad state" once that microtask ran after teardown.
+    ref.read(searchQueryProvider.notifier).set('');
     super.dispose();
   }
 

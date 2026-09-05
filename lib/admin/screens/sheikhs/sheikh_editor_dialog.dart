@@ -250,7 +250,11 @@ class _PhotoPreview extends StatelessWidget {
         border: Border.all(color: AdminTheme.border),
         image: url.isEmpty
             ? null
-            : DecorationImage(image: NetworkImage(url), fit: BoxFit.cover),
+            : DecorationImage(
+                image: NetworkImage(url),
+                fit: BoxFit.cover,
+                onError: (_, __) {},
+              ),
       ),
       child: uploading
           ? const Center(
