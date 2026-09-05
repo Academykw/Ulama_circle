@@ -1,3 +1,4 @@
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -33,7 +34,9 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
     });
     try {
       await action();
-    } catch (e) {
+    } catch (e, st) {
+      debugPrint('Admin auth failed: $e\n$st');
+      FirebaseCrashlytics.instance.recordError(e, st, fatal: false);
       setState(() => _error = _friendly(e));
     } finally {
       if (mounted) setState(() => _busy = false);

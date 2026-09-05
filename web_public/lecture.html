@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Open in Ulama Circle</title>
+  <style>
+    :root { --emerald:#0A2A20; --emerald2:#0E3A2C; --gold:#D4AF37; --gold2:#E8CE7E; --cream:#F3E9CE; }
+    * { box-sizing:border-box; }
+    body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center;
+      background:linear-gradient(135deg,var(--emerald),#060B09); color:var(--cream);
+      font-family:-apple-system,"Segoe UI",Roboto,system-ui,sans-serif; text-align:center; padding:24px; }
+    .card { max-width:420px; }
+    .brand { letter-spacing:3px; text-transform:uppercase; color:var(--gold2); font-weight:700; font-size:13px; }
+    h1 { font-family:Georgia,serif; font-size:28px; margin:12px 0 8px; }
+    p { color:rgba(243,233,206,.8); line-height:1.6; margin:0 0 26px; }
+    .btn { display:inline-block; text-decoration:none; font-weight:700; border-radius:999px;
+      padding:15px 28px; margin:8px; }
+    .play { background:linear-gradient(180deg,var(--gold2),var(--gold)); color:#0D2620; }
+    .open { background:transparent; color:var(--cream); border:1px solid rgba(212,175,55,.5); }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="brand">Ulama Circle</div>
+    <h1>Listen on Ulama Circle 🎧</h1>
+    <p>Open this lecture in the Ulama Circle app — authentic Islamic lectures &amp; Qur'an recitation in Hausa, Yoruba &amp; English.</p>
+    <a class="btn open" id="openApp" href="#">Open in app</a>
+    <a class="btn play" href="https://play.google.com/store/apps/details?id=com.ulama.circle.lectures">Get it on Google Play</a>
+  </div>
+  <script>
+    // /lecture/{id} -> try to open the installed app via the custom scheme.
+    var parts = location.pathname.split('/').filter(Boolean);
+    var id = parts.length >= 2 && parts[0] === 'lecture' ? parts[1] : '';
+    if (id) {
+      var deep = 'ulamacircle://lecture/' + id;
+      document.getElementById('openApp').href = deep;
+      // Auto-attempt to open the app on load (harmless if not installed).
+      setTimeout(function(){ location.href = deep; }, 400);
+    }
+  </script>
+</body>
+</html>
