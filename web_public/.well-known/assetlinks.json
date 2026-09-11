@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.ulama.circle.lectures",
+      "sha256_cert_fingerprints": [
+        "1C:95:87:28:B0:CA:22:4F:8A:F4:35:EA:9E:D8:3A:CF:4C:98:65:9B:DC:D3:03:58:9E:7C:A4:14:F0:4A:44:F3"
+      ]
+    }
+  }
+]
