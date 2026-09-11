@@ -69,6 +69,11 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    match /lecture_stats_daily/{doc} {
+      allow read: if isAdmin();
+      allow write: if false; // written by Cloud Functions (admin SDK) only
+    }
+
     // --- Admins: marker docs, no client writes (grant via console/Cloud Function only) ---
 
     match /admins/{uid} {

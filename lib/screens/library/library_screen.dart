@@ -234,7 +234,9 @@ class _ScholarTile extends StatelessWidget {
               image: sheikh.photoUrl.isEmpty
                   ? null
                   : DecorationImage(
-                      image: NetworkImage(sheikh.photoUrl), fit: BoxFit.cover),
+                      image: NetworkImage(sheikh.photoUrl),
+                      fit: BoxFit.cover,
+                      onError: (_, __) {}),
               border: Border.all(color: AppColors.goldMid.withValues(alpha: 0.4)),
             ),
             alignment: Alignment.center,
