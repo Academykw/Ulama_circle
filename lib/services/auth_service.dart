@@ -35,32 +35,26 @@ class AuthService {
     return cred;
   }
 
-  // google_sign_in v7: the singleton must be initialize()'d once before use.
-  bool _googleInitialized = false;
-
-  Future<void> _ensureGoogleInitialized() async {
-    if (_googleInitialized) return;
-    await GoogleSignIn.instance
-        .initialize(serverClientId: AppConstants.googleServerClientId);
-    _googleInitialized = true;
-  }
+  // Pinned to the pre-Credential-Manager (legacy) Google Sign-In flow: the
+  // newer Credential Manager-based API (google_sign_in 7.x) hits a Google
+  // Play Services bug on a lot of real Android devices — the account picker
+  // opens, the user picks an account, and it fails with a native "Account
+  // reauth failed" error before any token reaches Dart. The legacy
+  // GoogleSignInClient flow doesn't go through Credential Manager and avoids
+  // that bug entirely.
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    scopes: const ['email'],
+    serverClientId: AppConstants.googleServerClientId,
+  );
 
   /// Google sign-in. Returns null if the user cancels the picker (so callers can
   /// treat cancellation as a no-op rather than an error).
   Future<UserCredential?> signInWithGoogle() async {
-    await _ensureGoogleInitialized();
+    final account = await _googleSignIn.signIn();
+    if (account == null) return null; // user cancelled
 
-    final GoogleSignInAccount account;
-    try {
-      account = await GoogleSignIn.instance.authenticate(
-        scopeHint: const ['email'],
-      );
-    } on GoogleSignInException catch (e) {
-      if (e.code == GoogleSignInExceptionCode.canceled) return null;
-      rethrow;
-    }
-
-    final idToken = account.authentication.idToken;
+    final auth = await account.authentication;
+    final idToken = auth.idToken;
     if (idToken == null) {
       throw FirebaseAuthException(
         code: 'google-no-id-token',
@@ -68,7 +62,10 @@ class AuthService {
       );
     }
 
-    final credential = GoogleAuthProvider.credential(idToken: idToken);
+    final credential = GoogleAuthProvider.credential(
+      idToken: idToken,
+      accessToken: auth.accessToken,
+    );
     final cred = await _auth.signInWithCredential(credential);
     await _ensureUserDoc(cred.user!, isGuest: false);
     return cred;
@@ -104,7 +101,7 @@ class AuthService {
     // Best-effort Google sign-out so the next Google login re-prompts the
     // account picker; ignore if Google was never used this session.
     try {
-      if (_googleInitialized) await GoogleSignIn.instance.signOut();
+      await _googleSignIn.signOut();
     } catch (_) {}
     await _auth.signOut();
   }
@@ -139,7 +136,7 @@ class AuthService {
 
     // 3. Drop the Google session so the picker re-prompts next time.
     try {
-      if (_googleInitialized) await GoogleSignIn.instance.signOut();
+      await _googleSignIn.signOut();
     } catch (_) {}
   }
 
@@ -157,17 +154,25 @@ class AuthService {
   Future<void> _reauthenticate(User user) async {
     final providers = user.providerData.map((p) => p.providerId).toSet();
     if (providers.contains('google.com')) {
-      await _ensureGoogleInitialized();
-      final account = await GoogleSignIn.instance
-          .authenticate(scopeHint: const ['email']);
-      final idToken = account.authentication.idToken;
+      final account = await _googleSignIn.signIn();
+      if (account == null) {
+        throw FirebaseAuthException(
+          code: 'requires-recent-login',
+          message: 'Sign-in was cancelled. Please try again.',
+        );
+      }
+      final auth = await account.authentication;
+      final idToken = auth.idToken;
       if (idToken == null) {
         throw FirebaseAuthException(
           code: 'google-no-id-token',
           message: 'Google sign-in did not return an ID token.',
         );
       }
-      final credential = GoogleAuthProvider.credential(idToken: idToken);
+      final credential = GoogleAuthProvider.credential(
+        idToken: idToken,
+        accessToken: auth.accessToken,
+      );
       await user.reauthenticateWithCredential(credential);
     } else {
       // Email/password (or unknown) — we don't hold the password here.

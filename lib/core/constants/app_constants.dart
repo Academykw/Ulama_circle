@@ -52,7 +52,7 @@ class AppConstants {
 
   // ---- Google sign-in ----
   /// The project's *Web* OAuth client ID (client_type 3 in google-services.json).
-  /// google_sign_in v7 needs this as `serverClientId` so the returned ID token's
+  /// google_sign_in needs this as `serverClientId` so the returned ID token's
   /// audience matches what Firebase Auth expects. This is public info (not a
   /// secret), so it's safe to keep in source. If you swap Firebase projects,
   /// update this to the new project's Web client ID.
