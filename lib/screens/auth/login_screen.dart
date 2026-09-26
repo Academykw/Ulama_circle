@@ -1,8 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show PlatformException;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../providers/auth_provider.dart';
@@ -45,14 +45,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       debugPrint('Auth failed: ${e.code} ${e.message}\n$st');
       FirebaseCrashlytics.instance.recordError(e, st, fatal: false);
       if (mounted) _showError(_messageFor(e));
-    } on GoogleSignInException catch (e, st) {
-      debugPrint('Google sign-in failed: ${e.code} ${e.description}\n$st');
+    } on PlatformException catch (e, st) {
+      debugPrint('Google sign-in failed: ${e.code} ${e.message}\n$st');
       FirebaseCrashlytics.instance.recordError(e, st, fatal: false);
       if (mounted) {
-        _showError(e.code == GoogleSignInExceptionCode.canceled
-            ? 'Sign-in cancelled.'
-            : 'Google sign-in isn\'t available right now. Please try again '
-                'or use email instead.');
+        _showError('Google sign-in isn\'t available right now. Please try '
+            'again or use email instead.');
       }
     } catch (e, st) {
       debugPrint('Auth failed: $e\n$st');
