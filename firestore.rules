@@ -52,6 +52,15 @@ service cloud.firestore {
       }
     }
 
+    // --- Announcements (the in-app bell inbox): public read so every user,
+    //     including guests, sees the history. Written by the
+    //     sendTopicNotification Cloud Function; admins may edit/delete. ---
+
+    match /announcements/{announcementId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     // --- Users: owner or admin only ---
 
     match /users/{uid} {

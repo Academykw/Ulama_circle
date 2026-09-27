@@ -56,15 +56,23 @@ android {
             } else {
                 signingConfigs.getByName("debug")
             }
-            // AGP 9 turns R8 minification + resource shrinking ON by default for
-            // release. That stripped audio_service's notification-icon drawables
-            // (they're only referenced by string name at runtime), which broke
-            // the media notification ("You must specify an icon resource id to
-            // build a CustomAction"). We ship no ProGuard keep rules, so keep
-            // both OFF — R8 would also risk breaking other reflection-based
-            // plugins. Revisit later with proper keep rules if APK size matters.
-            isMinifyEnabled = false
+            // Minification is ON: Google Play flags apps whose DEX is below a
+            // minimum obfuscated share ("DEX code optimisation is below our
+            // threshold"). The keep rules in proguard-rules.pro protect the
+            // reflection-based plugins (audio_service/media3, Firebase, Google
+            // Sign-In) that R8 cannot see into.
+            //
+            // Resource shrinking stays OFF. It was the half of AGP 9's default
+            // that broke the media notification ("You must specify an icon
+            // resource id to build a CustomAction") — it strips audio_service's
+            // notification-icon drawables, which are only referenced by string
+            // name at runtime.
+            isMinifyEnabled = true
             isShrinkResources = false
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
         }
     }
 }
