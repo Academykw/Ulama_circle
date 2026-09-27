@@ -206,6 +206,12 @@ class L10nEn extends L10n {
       'New announcements and lectures will show up here';
 
   @override
+  String get readMore => 'Read more';
+
+  @override
+  String get showLess => 'Show less';
+
+  @override
   String get noDownloads => 'No downloads yet';
 
   @override

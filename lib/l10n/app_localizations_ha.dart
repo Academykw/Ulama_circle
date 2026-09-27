@@ -205,6 +205,12 @@ class L10nHa extends L10n {
       'Sabbin sanarwa da karatu za su bayyana a nan';
 
   @override
+  String get readMore => 'Kara karantawa';
+
+  @override
+  String get showLess => 'Rage';
+
+  @override
   String get noDownloads => 'Ba a sauke komai ba tukuna';
 
   @override

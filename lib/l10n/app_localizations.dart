@@ -481,6 +481,18 @@ abstract class L10n {
   /// **'New announcements and lectures will show up here'**
   String get notificationsEmptySub;
 
+  /// No description provided for @readMore.
+  ///
+  /// In en, this message translates to:
+  /// **'Read more'**
+  String get readMore;
+
+  /// No description provided for @showLess.
+  ///
+  /// In en, this message translates to:
+  /// **'Show less'**
+  String get showLess;
+
   /// No description provided for @noDownloads.
   ///
   /// In en, this message translates to:
