@@ -3,6 +3,7 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show PlatformException;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../providers/auth_provider.dart';
@@ -127,20 +128,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Icon(Icons.circle_outlined,
-                        color: AppColors.gold, size: 56),
-                    const SizedBox(height: 16),
+                    const Center(child: _Emblem()),
+                    const SizedBox(height: 18),
                     Text(
                       'Ulama Circle',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
+                      style: GoogleFonts.petrona(
                         color: AppColors.cream,
-                        fontSize: 24,
-                        fontWeight: FontWeight.w600,
+                        fontSize: 28,
+                        fontWeight: FontWeight.w700,
                         letterSpacing: 0.5,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 6),
                     Text(
                       _isRegister
                           ? 'Create an account to get started'
@@ -149,7 +149,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       style: TextStyle(
                           color: AppColors.mutedText, fontSize: 13),
                     ),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 30),
                     if (_isRegister) ...[
                       _field(
                         controller: _nameCtrl,
@@ -161,7 +161,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             ? 'Please enter your name'
                             : null,
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 14),
                     ],
                     _field(
                       controller: _emailCtrl,
@@ -178,7 +178,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         return null;
                       },
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 14),
                     _field(
                       controller: _passwordCtrl,
                       label: 'Password',
@@ -211,11 +211,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         alignment: Alignment.centerRight,
                         child: TextButton(
                           onPressed: _busy ? null : _forgotPassword,
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
                           child: const Text('Forgot password?',
-                              style: TextStyle(color: AppColors.gold)),
+                              style: TextStyle(
+                                  color: AppColors.gold, fontSize: 13)),
                         ),
                       ),
-                    const SizedBox(height: 8),
+                    // Same gap above the primary button in both modes - the
+                    // forgot-password link only exists in sign-in mode.
+                    SizedBox(height: _isRegister ? 24 : 14),
                     FilledButton(
                       onPressed: _busy ? null : _submitEmail,
                       style: FilledButton.styleFrom(
@@ -236,7 +245,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               style:
                                   const TextStyle(fontWeight: FontWeight.w600)),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 24),
+                    const _OrDivider(),
+                    const SizedBox(height: 24),
+                    OutlinedButton.icon(
+                      onPressed: _busy ? null : _submitGoogle,
+                      icon: const _GoogleGlyph(),
+                      label: const Text('Continue with Google'),
+                      style: _socialButtonStyle,
+                    ),
+                    const SizedBox(height: 12),
+                    OutlinedButton.icon(
+                      onPressed: _busy ? null : _submitGuest,
+                      icon: const Icon(Icons.person_outline, size: 20),
+                      label: const Text('Continue as guest'),
+                      style: _socialButtonStyle,
+                    ),
+                    const SizedBox(height: 22),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -251,37 +276,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           onPressed: _busy
                               ? null
                               : () => setState(() => _isRegister = !_isRegister),
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
                           child: Text(_isRegister ? 'Sign in' : 'Register',
-                              style: const TextStyle(color: AppColors.gold)),
+                              style: const TextStyle(
+                                  color: AppColors.gold,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600)),
                         ),
                       ],
-                    ),
-                    const _OrDivider(),
-                    const SizedBox(height: 16),
-                    OutlinedButton.icon(
-                      onPressed: _busy ? null : _submitGoogle,
-                      icon: const _GoogleGlyph(),
-                      label: const Text('Continue with Google'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.cream,
-                        side: BorderSide(color: AppColors.mutedText),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    OutlinedButton.icon(
-                      onPressed: _busy ? null : _submitGuest,
-                      icon: const Icon(Icons.person_outline, size: 20),
-                      label: const Text('Continue as guest'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.cream,
-                        side: BorderSide(color: AppColors.mutedText),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                      ),
                     ),
                   ],
                 ),
@@ -357,6 +363,47 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 }
 
+/// Both secondary buttons are identical apart from their icon and label, so the
+/// style lives in one place.
+final ButtonStyle _socialButtonStyle = OutlinedButton.styleFrom(
+  foregroundColor: AppColors.cream,
+  side: BorderSide(color: AppColors.mutedText.withValues(alpha: 0.45)),
+  padding: const EdgeInsets.symmetric(vertical: 16),
+  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+);
+
+/// The app's calligraphy emblem, with the same soft gold glow the splash uses
+/// so the two screens read as one brand.
+class _Emblem extends StatelessWidget {
+  const _Emblem();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 104,
+      height: 104,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.gold.withValues(alpha: 0.20),
+            blurRadius: 40,
+            spreadRadius: 2,
+          ),
+        ],
+      ),
+      child: Image.asset(
+        'assets/images/ulama_splash_emblem.png',
+        width: 96,
+        height: 96,
+        fit: BoxFit.contain,
+        filterQuality: FilterQuality.high,
+      ),
+    );
+  }
+}
+
 /// Simple "G" mark so we don't need to ship a Google logo asset. A branded
 /// multi-color logo can replace this later if desired.
 class _GoogleGlyph extends StatelessWidget {
@@ -391,7 +438,7 @@ class _OrDivider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: EdgeInsets.zero,
       child: Row(
         children: [
           Expanded(child: Divider(color: AppColors.mutedText.withValues(alpha: 0.3))),

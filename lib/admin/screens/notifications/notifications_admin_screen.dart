@@ -2,12 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/constants/app_constants.dart';
+import '../../../core/utils/formatters.dart';
+import '../../../models/app_notification.dart';
 import '../../admin_theme.dart';
 import '../../providers/admin_providers.dart';
 import '../widgets/admin_page.dart';
 
-/// Compose + send a push to a topic. Backed by the `sendTopicNotification`
-/// Cloud Function (deploy functions + upgrade to Blaze for this to work).
+/// Compose + send an announcement, and review what has already gone out.
+///
+/// Backed by the `sendTopicNotification` Cloud Function (deploy functions +
+/// upgrade to Blaze for this to work), which pushes to the topic AND saves the
+/// message to `announcements` — the app's in-app bell inbox reads that, so a
+/// message lands even for users who missed or disabled the push.
 class NotificationsAdminScreen extends ConsumerStatefulWidget {
   const NotificationsAdminScreen({super.key});
 
@@ -47,14 +53,18 @@ class _NotificationsAdminScreenState
           : _topic == AppConstants.topicNewLectures
               ? 'lecture'
               : 'general';
-      await ref.read(adminServiceProvider).sendTopicNotification(
-            topic: _topic,
-            title: _title.text.trim(),
-            body: _body.text.trim(),
-            type: type,
-          );
+      final pushError =
+          await ref.read(adminServiceProvider).sendTopicNotification(
+                topic: _topic,
+                title: _title.text.trim(),
+                body: _body.text.trim(),
+                type: type,
+              );
       setState(() {
-        _success = 'Sent to everyone subscribed to this topic.';
+        _success = pushError == null
+            ? 'Sent. It is in every subscriber\'s notifications and in the '
+                'app\'s in-app inbox.'
+            : 'Saved to the in-app inbox, but the push failed: $pushError';
         _title.clear();
         _body.clear();
       });
@@ -69,10 +79,24 @@ class _NotificationsAdminScreenState
   Widget build(BuildContext context) {
     return AdminPage(
       title: 'Notifications',
-      subtitle: 'Send an announcement to everyone subscribed to a topic.',
+      subtitle: 'Send an announcement — it goes out as a push and stays in '
+          'the app\'s in-app inbox.',
       child: SingleChildScrollView(
         padding: const EdgeInsets.only(bottom: 32),
-        child: Container(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _composer(),
+            const SizedBox(height: 32),
+            const _SentList(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _composer() {
+    return Container(
           width: 560,
           padding: const EdgeInsets.all(24),
           decoration: AdminTheme.card,
@@ -124,8 +148,6 @@ class _NotificationsAdminScreenState
                 ),
               ),
             ],
-          ),
-        ),
       ),
     );
   }
@@ -162,6 +184,156 @@ class _Banner extends StatelessWidget {
           Expanded(
               child: Text(text,
                   style: TextStyle(color: color, fontSize: 13))),
+        ],
+      ),
+    );
+  }
+}
+
+/// What users currently see in the app's bell inbox. Deleting removes a message
+/// from every inbox (the push already delivered can't be recalled).
+class _SentList extends ConsumerWidget {
+  const _SentList();
+
+  static String _topicLabel(String topic) {
+    for (final t in AppConstants.notificationTopics) {
+      if (t.topic == topic) return t.label;
+    }
+    return topic.isEmpty ? '—' : topic;
+  }
+
+  Future<void> _confirmDelete(
+    BuildContext context,
+    WidgetRef ref,
+    AppNotification item,
+  ) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Remove from inboxes?'),
+        content: Text(
+          '“${item.title}” will disappear from every user\'s in-app inbox. '
+          'The push notification already delivered stays on their device.',
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel')),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Remove')),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    await ref.read(adminServiceProvider).deleteAnnouncement(item.id);
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final sent = ref.watch(sentAnnouncementsProvider);
+
+    return Container(
+      width: 720,
+      padding: const EdgeInsets.all(24),
+      decoration: AdminTheme.card,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'In the app\'s inbox',
+            style: TextStyle(
+                color: AdminTheme.ink,
+                fontSize: 16,
+                fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Everything sent, newest first — this is exactly what users find '
+            'under the bell.',
+            style: TextStyle(color: AdminTheme.subtle, fontSize: 13),
+          ),
+          const SizedBox(height: 16),
+          switch (sent) {
+            AsyncError(:final error) => Text('Could not load: $error',
+                style: const TextStyle(color: Colors.redAccent, fontSize: 13)),
+            AsyncData(:final value) when value.isEmpty => const Text(
+                'Nothing sent yet.',
+                style: TextStyle(color: AdminTheme.faint, fontSize: 13)),
+            AsyncData(:final value) => Column(
+                children: [
+                  for (final item in value)
+                    _SentRow(
+                      item: item,
+                      topicLabel: _topicLabel(item.topic),
+                      onDelete: () => _confirmDelete(context, ref, item),
+                    ),
+                ],
+              ),
+            _ => const Padding(
+                padding: EdgeInsets.symmetric(vertical: 12),
+                child: Center(child: CircularProgressIndicator()),
+              ),
+          },
+        ],
+      ),
+    );
+  }
+}
+
+class _SentRow extends StatelessWidget {
+  const _SentRow({
+    required this.item,
+    required this.topicLabel,
+    required this.onDelete,
+  });
+
+  final AppNotification item;
+  final String topicLabel;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      decoration: const BoxDecoration(
+        border: Border(top: BorderSide(color: AdminTheme.border)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.title,
+                  style: const TextStyle(
+                      color: AdminTheme.ink,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600),
+                ),
+                if (item.body.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(item.body,
+                      style: const TextStyle(
+                          color: AdminTheme.subtle, fontSize: 13, height: 1.35)),
+                ],
+                const SizedBox(height: 4),
+                Text(
+                  '$topicLabel · ${Formatters.timeAgo(item.receivedAt)}',
+                  style: const TextStyle(color: AdminTheme.faint, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          IconButton(
+            tooltip: 'Remove from inboxes',
+            onPressed: onDelete,
+            icon: const Icon(Icons.delete_outline,
+                size: 20, color: AdminTheme.faint),
+          ),
         ],
       ),
     );

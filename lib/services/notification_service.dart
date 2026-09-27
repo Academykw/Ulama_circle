@@ -49,7 +49,10 @@ class NotificationService {
     final body = n?.body ?? data['body'] ?? '';
     if (title.isEmpty && body.isEmpty) return;
     await _db.addNotification(AppNotification(
-      id: message.messageId ??
+      // Admin sends carry the `announcements` doc id — key on it so this local
+      // copy and the Firestore one collapse into a single inbox row.
+      id: data['announcementId'] ??
+          message.messageId ??
           DateTime.now().microsecondsSinceEpoch.toString(),
       title: title,
       body: body,
