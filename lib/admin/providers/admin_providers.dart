@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../models/app_notification.dart';
 import '../services/admin_service.dart';
 
 /// Single AdminService instance for the panel.
@@ -27,3 +28,10 @@ class AdminSectionNotifier extends Notifier<AdminSection> {
   AdminSection build() => AdminSection.dashboard;
   void select(AdminSection s) => state = s;
 }
+
+/// Messages already sent to the in-app inbox — the "Sent" list in the
+/// Notifications module.
+final sentAnnouncementsProvider =
+    StreamProvider<List<AppNotification>>((ref) {
+  return ref.watch(adminServiceProvider).watchAnnouncements();
+});

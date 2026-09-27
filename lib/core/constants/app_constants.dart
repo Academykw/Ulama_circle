@@ -17,6 +17,8 @@ class AppConstants {
   static const String recitersCollection = 'reciters';
   static const String recitationsCollection = 'recitations';
   static const String usersCollection = 'users';
+  /// Admin-sent messages, mirrored into the in-app bell inbox.
+  static const String announcementsCollection = 'announcements';
   static const String adminsCollection = 'admins';
   static const String commentsSubcollection = 'comments';
   static const String playlistsSubcollection = 'playlists';
@@ -41,6 +43,11 @@ class AppConstants {
   static const String metaKeyPlayCount = 'play_count_total'; // for review prompt
   static const String metaKeyReviewAsked = 'review_asked';
   static const String metaKeyNotifications = 'notifications_inbox';
+  /// Ids of `announcements` docs the user has already seen in the bell inbox.
+  static const String metaKeyReadAnnouncements = 'read_announcement_ids';
+  /// Ids of `announcements` docs hidden from this device's inbox via "Clear".
+  static const String metaKeyDismissedAnnouncements =
+      'dismissed_announcement_ids';
   /// One-time "enable background playback" tip for aggressive-OEM devices.
   static const String metaKeyBgTipShown = 'bg_tip_shown';
   /// Prefix for per-topic push toggles, e.g. 'notif_pref_general_announcements'.
@@ -84,6 +91,9 @@ class AppConstants {
       description: 'Daily Qur’an and reflection prompts in Ramadan',
     ),
   ];
+
+  /// How many announcements the bell inbox pulls from Firestore.
+  static const int announcementsInboxLimit = 50;
 
   // ---- Pagination ----
   static const int defaultPageSize = 20;

@@ -6,6 +6,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 
 import '../../core/constants/app_constants.dart';
+import '../../models/app_notification.dart';
 import '../../models/category_model.dart';
 import '../../models/lecture_model.dart';
 import '../../models/reciter_model.dart';
@@ -238,7 +239,11 @@ class AdminService {
 
   // ---- Push (via the sendTopicNotification Cloud Function; admin-checked there) ----
 
-  Future<void> sendTopicNotification({
+  /// Sends a push AND saves the message to `announcements`, which is what the
+  /// app's in-app inbox reads. Returns the push error when the notification
+  /// itself failed — the announcement is saved either way, so the message still
+  /// reaches the inbox and the caller can say so.
+  Future<String?> sendTopicNotification({
     required String topic,
     required String title,
     required String body,
@@ -246,13 +251,32 @@ class AdminService {
   }) async {
     final callable =
         FirebaseFunctions.instance.httpsCallable('sendTopicNotification');
-    await callable.call<dynamic>({
+    final res = await callable.call<dynamic>({
       'topic': topic,
       'title': title,
       'body': body,
       'type': type,
     });
+    final data = res.data;
+    if (data is Map && data['pushError'] != null) {
+      return data['pushError'].toString();
+    }
+    return null;
   }
+
+  CollectionReference<Map<String, dynamic>> get _announcements =>
+      _db.collection(AppConstants.announcementsCollection);
+
+  /// The messages users see in the app's bell inbox, newest first.
+  Stream<List<AppNotification>> watchAnnouncements() => _announcements
+      .orderBy('createdAt', descending: true)
+      .limit(AppConstants.announcementsInboxLimit)
+      .snapshots()
+      .map((s) => s.docs.map(AppNotification.fromFirestore).toList());
+
+  /// Removes a message from every user's inbox (the push already sent can't be
+  /// recalled, but the in-app copy disappears).
+  Future<void> deleteAnnouncement(String id) => _announcements.doc(id).delete();
 
   // ---- Storage uploads (generic; e.g. scholar/reciter images) ----
 
