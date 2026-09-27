@@ -5,7 +5,7 @@ import '../../../core/icons/px.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../providers/auth_provider.dart';
-import '../../../providers/local_db_provider.dart';
+import '../../../providers/notification_providers.dart';
 import '../../notifications/notifications_screen.dart';
 
 /// Top of Home: greeting with the user's avatar on the left and a notification
@@ -122,55 +122,49 @@ class _NotificationBell extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final db = ref.watch(localDbServiceProvider);
+    final unread = ref.watch(unreadInboxCountProvider);
     void open() => Navigator.of(context).push(
           MaterialPageRoute(builder: (_) => const NotificationsScreen()),
         );
 
-    return ValueListenableBuilder(
-      valueListenable: db.notificationsListenable(),
-      builder: (context, _, __) {
-        final unread = db.unreadNotificationCount;
-        return Stack(
-          clipBehavior: Clip.none,
-          children: [
-            GestureDetector(
-              onTap: open,
-              child: Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: AppColors.cream.withValues(alpha: 0.05),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: AppColors.cardBorder),
-                ),
-                alignment: Alignment.center,
-                child: const PxIcon(Px.bell, size: 21, color: AppColors.gold),
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        GestureDetector(
+          onTap: open,
+          child: Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: AppColors.cream.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: AppColors.cardBorder),
+            ),
+            alignment: Alignment.center,
+            child: const PxIcon(Px.bell, size: 21, color: AppColors.gold),
+          ),
+        ),
+        if (unread > 0)
+          Positioned(
+            right: 6,
+            top: 6,
+            child: Container(
+              padding: const EdgeInsets.all(4),
+              constraints:
+                  const BoxConstraints(minWidth: 18, minHeight: 18),
+              decoration: const BoxDecoration(
+                  color: AppColors.gold, shape: BoxShape.circle),
+              alignment: Alignment.center,
+              child: Text(
+                unread > 9 ? '9+' : '$unread',
+                style: TextStyle(
+                    color: AppColors.charcoal,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700),
               ),
             ),
-            if (unread > 0)
-              Positioned(
-                right: 6,
-                top: 6,
-                child: Container(
-                  padding: const EdgeInsets.all(4),
-                  constraints:
-                      const BoxConstraints(minWidth: 18, minHeight: 18),
-                  decoration: const BoxDecoration(
-                      color: AppColors.gold, shape: BoxShape.circle),
-                  alignment: Alignment.center,
-                  child: Text(
-                    unread > 9 ? '9+' : '$unread',
-                    style: TextStyle(
-                        color: AppColors.charcoal,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700),
-                  ),
-                ),
-              ),
-          ],
-        );
-      },
+          ),
+      ],
     );
   }
 }

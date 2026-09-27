@@ -261,12 +261,58 @@ class LocalDbService {
     await _writeNotifications(list);
   }
 
-  Future<void> clearNotifications() =>
-      _meta.delete(AppConstants.metaKeyNotifications);
+  Future<void> clearNotifications() => _meta.delete(
+      AppConstants.metaKeyNotifications);
 
-  /// Reactive handle so the bell + inbox rebuild as notifications change.
-  ValueListenable<Box> notificationsListenable() =>
-      _meta.listenable(keys: [AppConstants.metaKeyNotifications]);
+  /// Reactive handle so the bell + inbox rebuild as notifications change —
+  /// covers both the locally cached FCM messages and the read marks kept for
+  /// server-side announcements.
+  ValueListenable<Box> notificationsListenable() => _meta.listenable(keys: [
+        AppConstants.metaKeyNotifications,
+        AppConstants.metaKeyReadAnnouncements,
+        AppConstants.metaKeyDismissedAnnouncements,
+      ]);
+
+  // ---- Read/dismissed state for `announcements` docs ----
+  //
+  // The docs are shared by every user, so "read" and "cleared" are per-device
+  // facts that live here rather than in Firestore.
+
+  Set<String> _idSet(String key) {
+    final raw = _meta.get(key) as List?;
+    return raw == null ? <String>{} : raw.map((e) => e.toString()).toSet();
+  }
+
+  /// Caps the stored id sets so they can't grow without bound; the inbox only
+  /// ever shows the most recent [AppConstants.announcementsInboxLimit] anyway.
+  Future<void> _putIdSet(String key, Set<String> ids) {
+    final list = ids.toList();
+    final capped = list.length > _announcementIdLimit
+        ? list.sublist(list.length - _announcementIdLimit)
+        : list;
+    return _meta.put(key, capped);
+  }
+
+  static const int _announcementIdLimit = 300;
+
+  Set<String> readAnnouncementIds() =>
+      _idSet(AppConstants.metaKeyReadAnnouncements);
+
+  Set<String> dismissedAnnouncementIds() =>
+      _idSet(AppConstants.metaKeyDismissedAnnouncements);
+
+  Future<void> markAnnouncementsRead(Iterable<String> ids) async {
+    final current = readAnnouncementIds();
+    if (ids.every(current.contains)) return; // nothing new — skip the write
+    await _putIdSet(
+        AppConstants.metaKeyReadAnnouncements, current..addAll(ids));
+  }
+
+  /// "Clear" in the inbox hides the announcements the user has seen — the docs
+  /// themselves stay put (only an admin can delete those).
+  Future<void> dismissAnnouncements(Iterable<String> ids) =>
+      _putIdSet(AppConstants.metaKeyDismissedAnnouncements,
+          dismissedAnnouncementIds()..addAll(ids));
 
   // ---- Push notification topic preferences (default on) ----
 

@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../core/constants/app_constants.dart';
+import '../models/app_notification.dart';
 import '../models/category_model.dart';
 import '../models/lecture_model.dart';
 import '../models/reciter_model.dart';
@@ -87,6 +88,18 @@ class FirebaseService {
     final snap = await _categories.orderBy('order').get();
     return snap.docs.map(CategoryModel.fromFirestore).toList();
   }
+
+  // ---------------------------------------------------------------------------
+  // Announcements — the durable half of the bell inbox. Bounded by
+  // announcementsInboxLimit, newest first, so the stream stays cheap.
+  // ---------------------------------------------------------------------------
+
+  Stream<List<AppNotification>> watchAnnouncements() => _db
+      .collection(AppConstants.announcementsCollection)
+      .orderBy('createdAt', descending: true)
+      .limit(AppConstants.announcementsInboxLimit)
+      .snapshots()
+      .map((s) => s.docs.map(AppNotification.fromFirestore).toList());
 
   // ---------------------------------------------------------------------------
   // Quran reciters & recitations — reciters stream whole (small bounded set);

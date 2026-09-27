@@ -1,7 +1,8 @@
 /**
  * Ulama Circle Cloud Functions (2nd gen).
  *
- *  - sendTopicNotification  (callable, admin-only) — push to an FCM topic;
+ *  - sendTopicNotification  (callable, admin-only) — push to an FCM topic and
+ *      save it to `announcements` (the in-app bell inbox reads that);
  *      backs the admin panel's "Notifications" module.
  *  - incrementPlayCount     (callable) — bump a lecture's playCount + its
  *      scholar's totalViews. O(1); safe to call on every play.
@@ -64,13 +65,35 @@ exports.sendTopicNotification = onCall({ invoker: "public" }, async (req) => {
   if (!topic || !title) {
     throw new HttpsError("invalid-argument", "topic and title are required.");
   }
-  const messageId = await admin.messaging().send({
+
+  // Persist the announcement FIRST so the in-app inbox is the source of truth:
+  // a push can be missed (permissions off, swiped away, app never opened, new
+  // device), but the doc is always there for the bell to read.
+  const ref = await db.collection("announcements").add({
+    title,
+    body: body || "",
+    type: type || "general",
     topic,
-    notification: { title, body: body || "" },
-    data: { type: type || "general" },
-    android: { priority: "high" },
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    sentBy: req.auth.uid,
   });
-  return { messageId };
+
+  // The push carries the doc id so the client can de-duplicate the copy it
+  // records from FCM against the one it reads from Firestore.
+  let messageId = null;
+  try {
+    messageId = await admin.messaging().send({
+      topic,
+      notification: { title, body: body || "" },
+      data: { type: type || "general", announcementId: ref.id },
+      android: { priority: "high" },
+    });
+  } catch (e) {
+    // The announcement is already saved, so the message still reaches the inbox.
+    // Surface the push failure to the admin instead of failing the whole send.
+    return { announcementId: ref.id, messageId: null, pushError: String(e) };
+  }
+  return { announcementId: ref.id, messageId };
 });
 
 exports.incrementPlayCount = onCall({ invoker: "public" }, async (req) => {
