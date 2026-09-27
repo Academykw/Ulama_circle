@@ -76,6 +76,8 @@
 
   "notificationsEmpty": "You're all caught up",
   "notificationsEmptySub": "New announcements and lectures will show up here",
+  "readMore": "Read more",
+  "showLess": "Show less",
 
   "noDownloads": "No downloads yet",
   "noDownloadsSub": "Play or download a lecture to keep it offline",
