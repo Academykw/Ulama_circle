@@ -1,7 +1,7 @@
 name: ulama_circle
 description: Islamic lectures from Nigerian Sunni scholars — Yoruba, Hausa, and English.
 publish_to: 'none'
-version: 1.2.0+3
+version: 1.3.1+5
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
@@ -59,7 +59,10 @@ dependencies:
   algoliasearch: ^1.2.1
 
   # Google sign-in
-  google_sign_in: ^7.2.0
+  # Pinned to 6.x (pre-Credential-Manager). google_sign_in 7.x's mandatory
+  # Credential Manager flow hits a Play Services bug ("Account reauth
+  # failed", code 16) on many real Android devices — see auth_service.dart.
+  google_sign_in: ^6.3.0
 
   cupertino_icons: ^1.0.8
 
